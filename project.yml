@@ -1,0 +1,153 @@
+name: Dictation
+
+options:
+  bundleIdPrefix: com.robertguss.dictation
+  deploymentTarget:
+    macOS: "15.0"
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: 34SDRG9ZZ2
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+packages:
+  DictationCore:
+    path: Packages/DictationCore
+
+targets:
+  DictationMac:
+    type: application
+    platform: macOS
+    sources: [Apps/Mac]
+    dependencies:
+      - package: DictationCore
+        products: [DictationCore, DictationUI]
+    info:
+      path: Apps/Mac/Info.plist
+      properties:
+        CFBundleDisplayName: Dictation
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.productivity
+        NSMicrophoneUsageDescription: Dictation records your voice while you hold or tap the dictation key, then sends the clip to your chosen transcription provider.
+        DictationKeychainAccessGroup: $(AppIdentifierPrefix)com.robertguss.dictation.shared
+    entitlements:
+      path: Apps/Mac/Mac.entitlements
+      properties:
+        com.apple.security.device.audio-input: true
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.robertguss.dictation.shared
+    settings:
+      base:
+        PRODUCT_NAME: Dictation
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.mac
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: NO
+
+  MacTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Apps/MacTests]
+    dependencies:
+      - target: DictationMac
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.mac.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  DictationiOS:
+    type: application
+    platform: iOS
+    sources: [Apps/iOS]
+    dependencies:
+      - package: DictationCore
+        products: [DictationCore, DictationUI]
+      - target: DictationKeyboard
+    info:
+      path: Apps/iOS/Info.plist
+      properties:
+        CFBundleDisplayName: Dictation
+        UILaunchScreen: {}
+        UIBackgroundModes: [audio]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSMicrophoneUsageDescription: Dictation records your voice when you tap the mic in the Dictation keyboard, then sends the clip to your chosen transcription provider.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.robertguss.dictation
+            CFBundleURLSchemes: [dictation]
+        DictationKeychainAccessGroup: $(AppIdentifierPrefix)com.robertguss.dictation.shared
+    entitlements:
+      path: Apps/iOS/iOS.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.robertguss.dictation
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.robertguss.dictation.shared
+    settings:
+      base:
+        PRODUCT_NAME: Dictation
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.ios
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+
+  DictationKeyboard:
+    type: app-extension
+    platform: iOS
+    sources: [Apps/Keyboard]
+    dependencies:
+      - package: DictationCore
+        products: [DictationCore]
+    info:
+      path: Apps/Keyboard/Info.plist
+      properties:
+        CFBundleDisplayName: Dictation
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.keyboard-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
+          NSExtensionAttributes:
+            IsASCIICapable: false
+            PrefersRightToLeft: false
+            PrimaryLanguage: en-US
+            RequestsOpenAccess: true
+    entitlements:
+      path: Apps/Keyboard/Keyboard.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.robertguss.dictation
+    settings:
+      base:
+        PRODUCT_NAME: DictationKeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.ios.keyboard
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        APPLICATION_EXTENSION_API_ONLY: YES
+
+schemes:
+  DictationMac:
+    build:
+      targets:
+        DictationMac: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [MacTests]
+  DictationiOS:
+    build:
+      targets:
+        DictationiOS: all
+        DictationKeyboard: all
+    run:
+      config: Debug
+  DictationKeyboard:
+    build:
+      targets:
+        DictationKeyboard: all
+        DictationiOS: all
+    run:
+      config: Debug
