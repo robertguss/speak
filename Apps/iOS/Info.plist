@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Dictation</string>
+	<string>Speak</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,19 +22,19 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.robertguss.dictation</string>
+			<string>com.robertguss.speak</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>dictation</string>
+				<string>speak</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>DictationKeychainAccessGroup</key>
-	<string>$(AppIdentifierPrefix)com.robertguss.dictation.shared</string>
+	<string>$(AppIdentifierPrefix)com.robertguss.speak.shared</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Dictation records your voice when you tap the mic in the Dictation keyboard, then sends the clip to your chosen transcription provider.</string>
+	<string>Speak records your voice when you tap the mic in the Speak keyboard, then sends the clip to your chosen transcription provider.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

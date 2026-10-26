@@ -3,7 +3,7 @@ import DictationUI
 import SwiftUI
 
 @main
-struct DictationMacApp: App {
+struct SpeakMacApp: App {
     @State private var controller: MacDictationController
     private let indicator: IndicatorPanel
 
@@ -28,7 +28,7 @@ struct DictationMacApp: App {
             Image(systemName: menuIcon)
         }
 
-        Window("Set up Dictation", id: "onboarding") {
+        Window("Set up Speak", id: "onboarding") {
             OnboardingView { controller.activateHotkey() }
         }
         .windowResizability(.contentSize)
@@ -69,7 +69,7 @@ private struct MenuContent: View {
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
         Divider()
-        Button("Quit Dictation") { NSApplication.shared.terminate(nil) }
+        Button("Quit Speak") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 }

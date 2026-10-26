@@ -33,7 +33,7 @@ final class FlowSessionController {
     func start() async {
         guard !isActive else { return }
         guard await AVAudioApplication.requestRecordPermission() else {
-            return fail("Microphone access is off — open the Dictation app")
+            return fail("Microphone access is off — open the Speak app")
         }
         do {
             let session = AVAudioSession.sharedInstance()
@@ -42,7 +42,7 @@ final class FlowSessionController {
             try recorder.startEngine()
         } catch {
             recorder.stopEngine()
-            return fail("Microphone unavailable — open the Dictation app")
+            return fail("Microphone unavailable — open the Speak app")
         }
         isActive = true
         policy.idleTimeout = TimeInterval(settings.load().idleTimeoutMinutes * 60)

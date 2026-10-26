@@ -3,7 +3,7 @@ import DictationUI
 import SwiftUI
 
 @main
-struct DictationiOSApp: App {
+struct SpeakiOSApp: App {
     @State private var session: FlowSessionController
     @State private var showSwipeBack = false
 
@@ -23,7 +23,7 @@ struct DictationiOSApp: App {
                         }
                     }
                 }
-                .navigationTitle("Dictation")
+                .navigationTitle("Speak")
             }
             .onOpenURL { url in
                 guard url == AppConstants.startSessionURL else { return }
@@ -58,7 +58,7 @@ private struct SessionSection: View {
         } header: {
             Text("Keyboard session")
         } footer: {
-            Text("Add the Dictation keyboard in Settings → General → Keyboard → Keyboards, and turn on Allow Full Access. Tapping its mic starts a session here automatically.")
+            Text("Add the Speak keyboard in Settings → General → Keyboard → Keyboards, and turn on Allow Full Access. Tapping its mic starts a session here automatically.")
         }
     }
 }

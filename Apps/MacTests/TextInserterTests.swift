@@ -1,7 +1,7 @@
 import AppKit
 @testable import DictationCore
 import XCTest
-@testable import Dictation
+@testable import Speak
 
 @MainActor
 final class TextInserterTests: XCTestCase {

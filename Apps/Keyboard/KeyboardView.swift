@@ -27,7 +27,7 @@ final class KeyboardView: UIView {
         micButton.configuration = config
         micButton.accessibilityLabel = "Dictate"
 
-        fullAccessLabel.text = "To dictate, turn on Full Access: Settings → General → Keyboard → Keyboards → Dictation → Allow Full Access."
+        fullAccessLabel.text = "To dictate, turn on Full Access: Settings → General → Keyboard → Keyboards → Speak → Allow Full Access."
         fullAccessLabel.font = .preferredFont(forTextStyle: .callout)
         fullAccessLabel.numberOfLines = 0
         fullAccessLabel.textAlignment = .center

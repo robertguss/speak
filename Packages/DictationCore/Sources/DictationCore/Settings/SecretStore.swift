@@ -25,7 +25,7 @@ public struct KeychainBlobStore: BlobStore {
     private var baseQuery: [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.robertguss.dictation",
+            kSecAttrService as String: "com.robertguss.speak",
             kSecAttrAccount as String: account,
             kSecAttrSynchronizable as String: true,
             kSecUseDataProtectionKeychain as String: true,

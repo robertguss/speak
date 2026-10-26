@@ -101,7 +101,7 @@ final class KeyboardViewController: UIInputViewController {
             }
             responder = current.next
         }
-        show("Open the Dictation app to start a session", for: 4)
+        show("Open the Speak app to start a session", for: 4)
     }
 
     private func abandonPendingRequestOnDismiss() {

@@ -6,7 +6,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.robertguss.dictation.shared</string>
+		<string>$(AppIdentifierPrefix)com.robertguss.speak.shared</string>
 	</array>
 </dict>
 </plist>

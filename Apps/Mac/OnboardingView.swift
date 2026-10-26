@@ -16,12 +16,12 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Set up Dictation").font(.title2.bold())
+            Text("Set up Speak").font(.title2.bold())
 
             step(
                 done: micStatus == .authorized,
                 title: "Microphone",
-                detail: "Dictation records while you hold or tap the dictation key."
+                detail: "Speak records while you hold or tap the dictation key."
             ) {
                 if micStatus == .notDetermined {
                     Button("Allow Microphone") {

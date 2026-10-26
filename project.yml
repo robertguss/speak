@@ -1,7 +1,7 @@
-name: Dictation
+name: Speak
 
 options:
-  bundleIdPrefix: com.robertguss.dictation
+  bundleIdPrefix: com.robertguss.speak
   deploymentTarget:
     macOS: "15.0"
     iOS: "18.0"
@@ -21,7 +21,7 @@ packages:
     path: Packages/DictationCore
 
 targets:
-  DictationMac:
+  SpeakMac:
     type: application
     platform: macOS
     sources: [Apps/Mac]
@@ -31,21 +31,21 @@ targets:
     info:
       path: Apps/Mac/Info.plist
       properties:
-        CFBundleDisplayName: Dictation
+        CFBundleDisplayName: Speak
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.productivity
-        NSMicrophoneUsageDescription: Dictation records your voice while you hold or tap the dictation key, then sends the clip to your chosen transcription provider.
-        DictationKeychainAccessGroup: $(AppIdentifierPrefix)com.robertguss.dictation.shared
+        NSMicrophoneUsageDescription: Speak records your voice while you hold or tap the dictation key, then sends the clip to your chosen transcription provider.
+        DictationKeychainAccessGroup: $(AppIdentifierPrefix)com.robertguss.speak.shared
     entitlements:
       path: Apps/Mac/Mac.entitlements
       properties:
         com.apple.security.device.audio-input: true
         keychain-access-groups:
-          - $(AppIdentifierPrefix)com.robertguss.dictation.shared
+          - $(AppIdentifierPrefix)com.robertguss.speak.shared
     settings:
       base:
-        PRODUCT_NAME: Dictation
-        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.mac
+        PRODUCT_NAME: Speak
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.speak.mac
         ENABLE_HARDENED_RUNTIME: YES
         GENERATE_INFOPLIST_FILE: NO
 
@@ -54,50 +54,50 @@ targets:
     platform: macOS
     sources: [Apps/MacTests]
     dependencies:
-      - target: DictationMac
+      - target: SpeakMac
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.mac.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.speak.mac.tests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Dictation.app/Contents/MacOS/Dictation
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Speak.app/Contents/MacOS/Speak
         BUNDLE_LOADER: $(TEST_HOST)
 
-  DictationiOS:
+  SpeakiOS:
     type: application
     platform: iOS
     sources: [Apps/iOS]
     dependencies:
       - package: DictationCore
         products: [DictationCore, DictationUI]
-      - target: DictationKeyboard
+      - target: SpeakKeyboard
     info:
       path: Apps/iOS/Info.plist
       properties:
-        CFBundleDisplayName: Dictation
+        CFBundleDisplayName: Speak
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
-        NSMicrophoneUsageDescription: Dictation records your voice when you tap the mic in the Dictation keyboard, then sends the clip to your chosen transcription provider.
+        NSMicrophoneUsageDescription: Speak records your voice when you tap the mic in the Speak keyboard, then sends the clip to your chosen transcription provider.
         CFBundleURLTypes:
-          - CFBundleURLName: com.robertguss.dictation
-            CFBundleURLSchemes: [dictation]
-        DictationKeychainAccessGroup: $(AppIdentifierPrefix)com.robertguss.dictation.shared
+          - CFBundleURLName: com.robertguss.speak
+            CFBundleURLSchemes: [speak]
+        DictationKeychainAccessGroup: $(AppIdentifierPrefix)com.robertguss.speak.shared
     entitlements:
       path: Apps/iOS/iOS.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.robertguss.dictation
+          - group.com.robertguss.speak
         keychain-access-groups:
-          - $(AppIdentifierPrefix)com.robertguss.dictation.shared
+          - $(AppIdentifierPrefix)com.robertguss.speak.shared
     settings:
       base:
-        PRODUCT_NAME: Dictation
-        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.ios
+        PRODUCT_NAME: Speak
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.speak.ios
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
 
-  DictationKeyboard:
+  SpeakKeyboard:
     type: app-extension
     platform: iOS
     sources: [Apps/Keyboard]
@@ -107,7 +107,7 @@ targets:
     info:
       path: Apps/Keyboard/Info.plist
       properties:
-        CFBundleDisplayName: Dictation
+        CFBundleDisplayName: Speak
         NSExtension:
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
@@ -120,36 +120,36 @@ targets:
       path: Apps/Keyboard/Keyboard.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.robertguss.dictation
+          - group.com.robertguss.speak
     settings:
       base:
-        PRODUCT_NAME: DictationKeyboard
-        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.ios.keyboard
+        PRODUCT_NAME: SpeakKeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.speak.ios.keyboard
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
         APPLICATION_EXTENSION_API_ONLY: YES
 
 schemes:
-  DictationMac:
+  SpeakMac:
     build:
       targets:
-        DictationMac: all
+        SpeakMac: all
     run:
       config: Debug
     test:
       config: Debug
       targets: [MacTests]
-  DictationiOS:
+  SpeakiOS:
     build:
       targets:
-        DictationiOS: all
-        DictationKeyboard: all
+        SpeakiOS: all
+        SpeakKeyboard: all
     run:
       config: Debug
-  DictationKeyboard:
+  SpeakKeyboard:
     build:
       targets:
-        DictationKeyboard: all
-        DictationiOS: all
+        SpeakKeyboard: all
+        SpeakiOS: all
     run:
       config: Debug

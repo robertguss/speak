@@ -3,8 +3,8 @@ import Foundation
 /// A payload-free, cross-process doorbell between the iOS app and its keyboard (KTD6).
 /// Darwin notifications can be lost, so receivers always re-read the shared files.
 public final class DarwinBell: @unchecked Sendable {
-    public static let toApp = "com.robertguss.dictation.toApp"
-    public static let toKeyboard = "com.robertguss.dictation.toKeyboard"
+    public static let toApp = "com.robertguss.speak.toApp"
+    public static let toKeyboard = "com.robertguss.speak.toKeyboard"
 
     private static var center: CFNotificationCenter { CFNotificationCenterGetDarwinNotifyCenter() }
 

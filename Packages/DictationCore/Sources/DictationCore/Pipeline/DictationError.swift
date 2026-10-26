@@ -18,8 +18,8 @@ public enum DictationError: Error, Equatable, Sendable {
     /// A short sentence for the indicator, menu, or keyboard status line.
     public var userMessage: String {
         switch self {
-        case .missingKey: "No API key. Add one in Dictation settings."
-        case .settingsUnreadable: "Couldn't read Dictation settings. Try again."
+        case .missingKey: "No API key. Add one in Speak settings."
+        case .settingsUnreadable: "Couldn't read Speak settings. Try again."
         case .invalidKey(let message): Self.join("Invalid API key", message)
         case .outOfCredits(let message): Self.join("Out of credits", message)
         case .rateLimited(let message): Self.join("Rate limited. Try again in a moment", message)
