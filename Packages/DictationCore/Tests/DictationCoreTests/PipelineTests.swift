@@ -121,7 +121,7 @@ final class PipelineTests: XCTestCase {
     }
 
     func testUnreadablePreferencesFailBeforeTranscribing() async throws {
-        let store = SettingsStore(preferences: UnreadablePreferences(), secrets: SecretStore(blob: InMemoryBlobStore()))
+        let store = SettingsStore(preferences: UnreadablePreferences(), secrets: SecretStore(blob: InMemoryBlobStore()), dictionary: DictionaryStore(items: InMemoryItemStore()))
         let transcriber = FakeTranscriber(.success("hi"))
         do {
             _ = try await DictationPipeline(settings: store) { _ in transcriber }.run(clip: makeClip(), duration: 2)

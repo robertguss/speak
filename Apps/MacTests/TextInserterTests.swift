@@ -71,7 +71,7 @@ final class TextInserterTests: XCTestCase {
         pasteboard.setString("previous", forType: .string)
         let before = pasteboard.changeCount
 
-        let settings = SettingsStore(preferences: EmptyBlobStore(), secrets: SecretStore(blob: EmptyBlobStore()))
+        let settings = SettingsStore(preferences: EmptyBlobStore(), secrets: SecretStore(blob: EmptyBlobStore()), dictionary: DictionaryStore(items: EmptyItemStore()))
         let pipeline = DictationPipeline(settings: settings) { _ in FailingTranscriber() }
         let controller = MacDictationController(settings: settings, pipeline: pipeline, inserter: inserter())
         let clip = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a")
@@ -97,6 +97,12 @@ private final class LockedString: @unchecked Sendable {
 private struct EmptyBlobStore: BlobStore {
     func read() throws -> Data? { nil }
     func write(_ data: Data) throws {}
+}
+
+private struct EmptyItemStore: ItemStore {
+    func readAll() throws -> [String: Data] { [:] }
+    func write(_ data: Data, id: String) throws {}
+    func delete(id: String) throws {}
 }
 
 private struct FailingTranscriber: Transcriber {

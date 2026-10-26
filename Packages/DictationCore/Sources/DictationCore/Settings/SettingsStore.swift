@@ -8,16 +8,19 @@ import Foundation
 public struct SettingsStore: Sendable {
     let preferences: any BlobStore
     let secrets: SecretStore
+    public let dictionary: DictionaryStore
 
-    public init(preferences: any BlobStore, secrets: SecretStore) {
+    public init(preferences: any BlobStore, secrets: SecretStore, dictionary: DictionaryStore) {
         self.preferences = preferences
         self.secrets = secrets
+        self.dictionary = dictionary
     }
 
     public static func keychain(accessGroup: String = AppConstants.keychainAccessGroup) -> SettingsStore {
         SettingsStore(
             preferences: KeychainBlobStore(account: "preferences", accessGroup: accessGroup),
-            secrets: SecretStore(blob: KeychainBlobStore(account: "api-keys", accessGroup: accessGroup))
+            secrets: SecretStore(blob: KeychainBlobStore(account: "api-keys", accessGroup: accessGroup)),
+            dictionary: .keychain(accessGroup: accessGroup)
         )
     }
 

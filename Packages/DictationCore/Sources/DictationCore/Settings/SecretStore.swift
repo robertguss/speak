@@ -23,10 +23,16 @@ public struct KeychainBlobStore: BlobStore {
     }
 
     private var baseQuery: [String: Any] {
+        var query = Self.query(accessGroup: accessGroup)
+        query[kSecAttrAccount as String] = account
+        return query
+    }
+
+    /// The attributes every Speak item shares: synced, in the shared access group.
+    static func query(accessGroup: String) -> [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.robertguss.speak",
-            kSecAttrAccount as String: account,
             kSecAttrSynchronizable as String: true,
             kSecUseDataProtectionKeychain as String: true,
         ]
@@ -59,6 +65,11 @@ public struct KeychainBlobStore: BlobStore {
         } else if status != errSecSuccess {
             throw KeychainError(status: status)
         }
+    }
+
+    public func delete() throws {
+        let status = SecItemDelete(baseQuery as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError(status: status) }
     }
 }
 
