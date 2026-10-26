@@ -13,16 +13,19 @@ public final class SettingsModel {
     public private(set) var transcriptionKey = ""
     public private(set) var cleanupKey = ""
     public private(set) var saveError: String?
+    public let dictionary: DictionaryModel
     private let store: SettingsStore
 
     public init(store: SettingsStore = .keychain()) {
         self.store = store
+        dictionary = DictionaryModel(store: store.dictionary)
     }
 
     /// Re-reads everything; there is no change notification for synced keychain items.
     public func reload() {
         prefs = store.load()
         reloadKeys()
+        dictionary.reload()
     }
 
     public func edit(_ change: (inout AppPreferences) -> Void) {
@@ -70,6 +73,7 @@ public struct SettingsView<Header: View>: View {
             header
             transcriptionSection
             cleanupSection
+            DictionarySection(model: model.dictionary, prefs: model.prefs)
             platformSection
             if let error = model.saveError {
                 Section { Text(error).foregroundStyle(.red) }

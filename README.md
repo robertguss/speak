@@ -7,6 +7,7 @@ Open-source, bring-your-own-key dictation for Mac, iPhone, and iPad.
 - **Mac:** a menu bar app. Tap or hold one modifier key to dictate, and the text is pasted at the cursor.
 - **iPhone/iPad:** a custom keyboard that inserts dictated text into any app. The main app records in the background.
 - **Providers:** OpenAI-compatible (OpenAI, Groq, local servers), Deepgram, or ElevenLabs Scribe, with an optional LLM cleanup pass.
+- **Custom dictionary:** names, acronyms, and jargon go to your provider as spelling hints, and "heard as → write as" fixes run on the device. Import your list from Wispr Flow in one click on the Mac, or from a Wispr-format CSV anywhere.
 - **Settings and keys** sync between devices through iCloud Keychain.
 - **Private by design:** no account, no server, no analytics. Audio goes only to the provider you choose, and each clip is deleted after it's transcribed.
 

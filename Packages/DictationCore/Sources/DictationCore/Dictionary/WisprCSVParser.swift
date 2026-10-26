@@ -4,6 +4,11 @@ import Foundation
 public struct ImportBatch: Equatable, Sendable {
     public var entries: [DictionaryEntry]
     public var skipped: Int
+
+    public init(entries: [DictionaryEntry], skipped: Int) {
+        self.entries = entries
+        self.skipped = skipped
+    }
 }
 
 /// Parses Wispr Flow's dictionary CSV (R9, KTD8): one column for a word, two for misspelling and correction.
