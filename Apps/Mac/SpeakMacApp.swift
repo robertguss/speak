@@ -25,7 +25,11 @@ struct SpeakMacApp: App {
         MenuBarExtra {
             MenuContent(controller: controller)
         } label: {
-            Image(systemName: menuIcon)
+            if let symbol = menuSymbol {
+                Image(systemName: symbol)
+            } else {
+                Image("MenuBarIcon")
+            }
         }
 
         Window("Set up Speak", id: "onboarding") {
@@ -40,12 +44,13 @@ struct SpeakMacApp: App {
         }
     }
 
-    private var menuIcon: String {
+    /// A status symbol while busy or failed; nil shows the Speak wave.
+    private var menuSymbol: String? {
         switch controller.phase {
         case .recording: "mic.fill"
         case .transcribing: "waveform"
         case .message(_, true): "exclamationmark.triangle"
-        default: "mic"
+        default: nil
         }
     }
 }
