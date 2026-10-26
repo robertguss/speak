@@ -29,11 +29,19 @@ public struct DictationPipeline: Sendable {
         guard duration >= Self.minimumClipDuration else { throw DictationError.tooShort }
 
         guard let prefs = try? settings.stored() else { throw DictationError.settingsUnreadable }
-        let config = settings.transcriptionConfig(prefs)
+        var config = settings.transcriptionConfig(prefs)
         if config.apiKey.isEmpty && config.provider != .openAICompatible {
             throw DictationError.missingKey
         }
+        // No host or key depends on the dictionary, so an unreadable one never fails the dictation (R12).
+        let dictionary = (try? settings.dictionary.entries()) ?? []
+        config.hints = VocabularyHints.select(dictionary, provider: config.provider, model: config.model).terms
         let raw = try await makeTranscriber(config).transcribe(audioFile: clip)
+        let result = try await clean(raw, prefs: prefs, glossary: VocabularyHints.glossary(dictionary))
+        return DictationResult(text: DictionaryReplacer.apply(to: result.text, entries: dictionary), cleanupSkipped: result.cleanupSkipped)
+    }
+
+    private func clean(_ raw: String, prefs: AppPreferences, glossary: [String]) async throws -> DictationResult {
         guard prefs.cleanupEnabled else { return DictationResult(text: raw, cleanupSkipped: false) }
 
         let cleanup = CleanupClient(
@@ -41,7 +49,8 @@ public struct DictationPipeline: Sendable {
                 baseURL: prefs.cleanupBaseURL,
                 model: prefs.cleanupModel,
                 apiKey: settings.apiKey(.cleanup, baseURL: prefs.cleanupBaseURL),
-                prompt: prefs.cleanupPrompt ?? DefaultCleanupPrompt.text
+                prompt: prefs.cleanupPrompt ?? DefaultCleanupPrompt.text,
+                glossary: glossary
             ),
             session: session
         )

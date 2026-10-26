@@ -5,12 +5,15 @@ public struct CleanupConfig: Sendable, Equatable {
     public var model: String
     public var apiKey: String
     public var prompt: String
+    /// Preferred spellings from the dictionary (R6, KTD6); empty sends no extra message.
+    public var glossary: [String]
 
-    public init(baseURL: URL, model: String, apiKey: String, prompt: String) {
+    public init(baseURL: URL, model: String, apiKey: String, prompt: String, glossary: [String] = []) {
         self.baseURL = baseURL
         self.model = model
         self.apiKey = apiKey
         self.prompt = prompt
+        self.glossary = glossary
     }
 }
 
@@ -29,13 +32,13 @@ public struct CleanupClient: Sendable {
     /// Returns the model's cleaned text, unguarded. Throws on any request or parse failure.
     public func clean(_ transcript: String) async throws -> String {
         let tag = "transcript-\(UUID().uuidString.prefix(8).lowercased())"
-        let body: [String: Any] = [
-            "model": config.model,
-            "messages": [
-                ["role": "system", "content": config.prompt],
-                ["role": "user", "content": "<\(tag)>\n\(transcript)\n</\(tag)>"],
-            ],
-        ]
+        var messages = [["role": "system", "content": config.prompt]]
+        if !config.glossary.isEmpty {
+            // A separate message, so the user's editable prompt stays untouched.
+            messages.append(["role": "system", "content": "Preferred spellings. When the transcript contains one of these terms, write it exactly as shown: \(config.glossary.joined(separator: ", "))"])
+        }
+        messages.append(["role": "user", "content": "<\(tag)>\n\(transcript)\n</\(tag)>"])
+        let body: [String: Any] = ["model": config.model, "messages": messages]
         var request = URLRequest(url: config.baseURL.appending(path: "chat").appending(path: "completions"), timeoutInterval: Self.timeout)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
