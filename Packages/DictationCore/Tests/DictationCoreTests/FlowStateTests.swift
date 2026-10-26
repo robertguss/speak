@@ -53,6 +53,17 @@ final class FlowStateTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: files.commandURL), before)
     }
 
+    func testStartTheKeyboardGaveUpOnIsNotRecorded() {
+        var policy = readyPolicy()
+        let id = UUID()
+        var abandoned = command(.start, id, at: t0)
+        abandoned.consumedResultID = id
+
+        XCTAssertNil(policy.handle(abandoned, at: t0.addingTimeInterval(1.5)))
+        XCTAssertEqual(policy.state.phase, .ready)
+        XCTAssertEqual(policy.handle(command(.start, id, at: t0), at: t0.addingTimeInterval(1.5)), .beginClip)
+    }
+
     func testStartWhileProcessingIsIgnored() {
         var policy = readyPolicy()
         let first = UUID()

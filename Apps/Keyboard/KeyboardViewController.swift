@@ -12,6 +12,8 @@ final class KeyboardViewController: UIInputViewController {
     private var deleteRepeat: Timer?
     private var transient: (text: String, until: Date)?
     private var watchdogCommand: (kind: FlowCommand.Kind, id: UUID, at: Date)?
+    /// The text field each request was started in, so a result never lands in another field.
+    private var requestDocument: (id: UUID, document: UUID)?
     private var opensAppOnNextMic = false
 
     override func viewDidLoad() {
@@ -69,7 +71,10 @@ final class KeyboardViewController: UIInputViewController {
         }
         switch selector.micAction {
         case .openApp: openApp()
-        case .start: send(.start, id: UUID(), command)
+        case .start:
+            let id = UUID()
+            requestDocument = (id, textDocumentProxy.documentIdentifier)
+            send(.start, id: id, command)
         case .stop: send(.stop, id: command.requestID!, command)
         case .wait: break
         }
@@ -117,12 +122,20 @@ final class KeyboardViewController: UIInputViewController {
         let selector = KeyboardResultSelector(state: state, command: command, now: now)
 
         if let (id, outcome) = selector.resolution {
+            // Mark the result consumed before acting on it; if that write fails, act on
+            // nothing so a later refresh can't insert the same text twice.
             var consumed = command
             consumed.consumedResultID = id
-            try? files?.write(consumed)
+            guard (try? files?.write(consumed)) != nil else {
+                show("Couldn't save dictation state", for: 4)
+                return render(state, selector: selector, now: now)
+            }
             DarwinBell.ring(DarwinBell.toApp)
             watchdogCommand = nil
+            let sameField = requestDocument.map { $0.id != id || $0.document == textDocumentProxy.documentIdentifier } ?? true
             switch outcome {
+            case .insert where !sameField:
+                show("Dictation discarded", for: 4)
             case .insert(let text, let cleanupSkipped):
                 textDocumentProxy.insertText(KeyboardResultSelector.textToInsert(text, after: textDocumentProxy.documentContextBeforeInput))
                 if cleanupSkipped { show("Cleanup skipped", for: 2) }
@@ -130,7 +143,8 @@ final class KeyboardViewController: UIInputViewController {
             case .discarded: show("Dictation discarded", for: 4)
             case .nothing: break
             }
-            return refresh()
+            let updated = KeyboardResultSelector(state: state, command: consumed, now: now)
+            return render(state, selector: updated, now: now)
         }
 
         checkWatchdog(state, command, now: now)

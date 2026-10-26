@@ -62,7 +62,8 @@ public struct FlowSessionPolicy: Sendable {
 
         switch kind {
         case .start:
-            guard state.phase == .ready, !command.abandoned,
+            // The keyboard writes consumedResultID for a start it gave up waiting on.
+            guard state.phase == .ready, !command.abandoned, command.consumedResultID != id,
                   let issued = command.issuedAt, now.timeIntervalSince(issued) < Self.startCommandLifetime,
                   id != state.result?.requestID else { return nil }
             state.phase = .recording
