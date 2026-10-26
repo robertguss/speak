@@ -23,7 +23,13 @@ public struct SettingsStore: Sendable {
 
     /// Current preferences, or defaults when nothing is stored or the item can't be read. Never writes.
     public func load() -> AppPreferences {
-        guard let data = try? preferences.read() else { return AppPreferences() }
+        (try? stored()) ?? AppPreferences()
+    }
+
+    /// Current preferences, or defaults when nothing is stored. Throws when the item exists but
+    /// can't be read, so a dictation never falls back to the default provider's host.
+    public func stored() throws -> AppPreferences {
+        guard let data = try preferences.read() else { return AppPreferences() }
         return (try? JSONDecoder().decode(AppPreferences.self, from: data)) ?? AppPreferences()
     }
 

@@ -36,8 +36,9 @@ public final class SettingsModel {
         reloadKeys()
     }
 
-    public func setKey(_ key: String, role: KeyRole) {
-        let baseURL = role == .transcription ? prefs.baseURL(for: prefs.transcriptionProvider) : prefs.cleanupBaseURL
+    /// `baseURL` is the host the key field was shown for, which may differ from the
+    /// current prefs if the provider changed before the field committed.
+    public func setKey(_ key: String, role: KeyRole, baseURL: URL) {
         do {
             try store.setAPIKey(key, role: role, baseURL: baseURL)
             saveError = nil
@@ -105,8 +106,9 @@ public struct SettingsView<Header: View>: View {
             SaveOnCommitField("Model", value: model.prefs.model(for: provider)) { value in
                 model.edit { $0.setModel(value, for: provider) }
             }
-            SaveOnCommitField("API key", value: model.transcriptionKey, secure: true) { model.setKey($0, role: .transcription) }
-                .id("transcription-key-\(model.prefs.baseURL(for: provider).host() ?? "")")
+            let keyURL = model.prefs.baseURL(for: provider)
+            SaveOnCommitField("API key", value: model.transcriptionKey, secure: true) { model.setKey($0, role: .transcription, baseURL: keyURL) }
+                .id("transcription-key-\(keyURL.host() ?? "")")
             if provider == .openAICompatible {
                 Text("Leave the key empty for local servers that don't need one.")
                     .font(.footnote)
@@ -125,8 +127,9 @@ public struct SettingsView<Header: View>: View {
                 SaveOnCommitField("Model", value: model.prefs.cleanupModel) { value in
                     model.edit { $0.cleanupModel = value }
                 }
-                SaveOnCommitField("API key", value: model.cleanupKey, secure: true) { model.setKey($0, role: .cleanup) }
-                    .id("cleanup-key-\(model.prefs.cleanupBaseURL.host() ?? "")")
+                let keyURL = model.prefs.cleanupBaseURL
+                SaveOnCommitField("API key", value: model.cleanupKey, secure: true) { model.setKey($0, role: .cleanup, baseURL: keyURL) }
+                    .id("cleanup-key-\(keyURL.host() ?? "")")
                 PromptEditor(value: model.prefs.cleanupPrompt ?? DefaultCleanupPrompt.text) { value in
                     model.edit { $0.cleanupPrompt = value }
                 }

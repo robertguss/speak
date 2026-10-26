@@ -4,6 +4,7 @@ import Foundation
 /// `message` carries the provider's own error text when it sent one.
 public enum DictationError: Error, Equatable, Sendable {
     case missingKey
+    case settingsUnreadable
     case invalidKey(message: String?)
     case outOfCredits(message: String?)
     case rateLimited(message: String?)
@@ -18,6 +19,7 @@ public enum DictationError: Error, Equatable, Sendable {
     public var userMessage: String {
         switch self {
         case .missingKey: "No API key. Add one in Dictation settings."
+        case .settingsUnreadable: "Couldn't read Dictation settings. Try again."
         case .invalidKey(let message): Self.join("Invalid API key", message)
         case .outOfCredits(let message): Self.join("Out of credits", message)
         case .rateLimited(let message): Self.join("Rate limited. Try again in a moment", message)

@@ -54,7 +54,11 @@ final class MacDictationController {
     }
 
     private func startRecording() {
-        guard phase != .transcribing, phase != .recording else { return }
+        guard phase != .transcribing, phase != .recording else {
+            // A tap ignored during transcription must not leave the machine latched.
+            if phase == .transcribing { machine.reset() }
+            return
+        }
         do {
             try recorder.startEngine()
             try recorder.beginClip()

@@ -28,7 +28,7 @@ public struct DictationPipeline: Sendable {
         defer { try? FileManager.default.removeItem(at: clip) }
         guard duration >= Self.minimumClipDuration else { throw DictationError.tooShort }
 
-        let prefs = settings.load()
+        guard let prefs = try? settings.stored() else { throw DictationError.settingsUnreadable }
         let config = settings.transcriptionConfig(prefs)
         if config.apiKey.isEmpty && config.provider != .openAICompatible {
             throw DictationError.missingKey

@@ -108,6 +108,14 @@ final class SettingsStoreTests: XCTestCase {
 
         XCTAssertThrowsError(try secrets.setValue("sk", for: "transcription:api.openai.com"))
     }
+
+    func testSecretWriteFailsWithoutWritingWhenItemCannotBeDecoded() {
+        let blob = InMemoryBlobStore(json: "not json")
+        let secrets = SecretStore(blob: blob)
+
+        XCTAssertThrowsError(try secrets.setValue("sk", for: "transcription:api.openai.com"))
+        XCTAssertEqual(blob.writeCount, 0)
+    }
 }
 
 private struct UnreadableBlobStore: BlobStore {

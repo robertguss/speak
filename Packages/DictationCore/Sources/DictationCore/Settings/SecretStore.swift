@@ -93,6 +93,6 @@ public struct SecretStore: Sendable {
 
     private func all() throws -> [String: String] {
         guard let data = try blob.read() else { return [:] }
-        return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+        return try JSONDecoder().decode([String: String].self, from: data)
     }
 }

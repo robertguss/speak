@@ -120,6 +120,18 @@ final class PipelineTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: clip.path))
     }
 
+    func testUnreadablePreferencesFailBeforeTranscribing() async throws {
+        let store = SettingsStore(preferences: UnreadablePreferences(), secrets: SecretStore(blob: InMemoryBlobStore()))
+        let transcriber = FakeTranscriber(.success("hi"))
+        do {
+            _ = try await DictationPipeline(settings: store) { _ in transcriber }.run(clip: makeClip(), duration: 2)
+            XCTFail("expected settingsUnreadable")
+        } catch {
+            XCTAssertEqual(error as? DictationError, .settingsUnreadable)
+        }
+        XCTAssertEqual(transcriber.calls.withLock { $0 }, 0)
+    }
+
     func testMissingDeepgramKeyFailsBeforeTranscribing() async throws {
         let (store, _, _) = SettingsStore.inMemory()
         try store.update { $0.transcriptionProvider = .deepgram }
@@ -132,4 +144,9 @@ final class PipelineTests: XCTestCase {
         }
         XCTAssertEqual(transcriber.calls.withLock { $0 }, 0)
     }
+}
+
+private struct UnreadablePreferences: BlobStore {
+    func read() throws -> Data? { throw KeychainError(status: errSecInteractionNotAllowed) }
+    func write(_ data: Data) throws {}
 }
