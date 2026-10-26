@@ -15,6 +15,7 @@ public struct ElevenLabsTranscriber: Transcriber {
         form.addField("model_id", config.model)
         form.addField("language_code", "en")
         form.addField("tag_audio_events", "false")
+        config.hints.forEach { form.addField("keyterms", $0) }
 
         var request = TranscriptionHTTP.request(url: config.baseURL.appending(path: "speech-to-text"))
         request.setValue(form.contentType, forHTTPHeaderField: "Content-Type")

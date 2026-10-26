@@ -13,7 +13,13 @@ public struct OpenAICompatibleTranscriber: Transcriber {
         var form = Multipart()
         form.addFile("file", filename: "audio.m4a", contentType: "audio/mp4", data: try Data(contentsOf: audioFile))
         form.addField("model", config.model)
-        form.addField(config.model.hasPrefix("gpt-transcribe") ? "languages[]" : "language", "en")
+        let keywords = VocabularyHints.usesKeywords(config.model)
+        form.addField(keywords ? "languages[]" : "language", "en")
+        if keywords {
+            config.hints.forEach { form.addField("keywords[]", $0) }
+        } else if !config.hints.isEmpty {
+            form.addField("prompt", VocabularyHints.whisperPrompt(config.hints))
+        }
 
         var request = TranscriptionHTTP.request(
             url: config.baseURL.appending(path: "audio").appending(path: "transcriptions")

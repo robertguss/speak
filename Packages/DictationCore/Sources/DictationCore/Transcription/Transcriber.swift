@@ -41,12 +41,15 @@ public struct TranscriptionConfig: Sendable, Equatable {
     public var model: String
     /// May be empty for local OpenAI-compatible servers.
     public var apiKey: String
+    /// Dictionary terms already selected for this provider and model (`VocabularyHints`).
+    public var hints: [String]
 
-    public init(provider: TranscriptionProviderID, baseURL: URL, model: String, apiKey: String) {
+    public init(provider: TranscriptionProviderID, baseURL: URL, model: String, apiKey: String, hints: [String] = []) {
         self.provider = provider
         self.baseURL = baseURL
         self.model = model
         self.apiKey = apiKey
+        self.hints = hints
     }
 }
 

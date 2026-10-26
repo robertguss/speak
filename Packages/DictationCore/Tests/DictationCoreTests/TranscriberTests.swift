@@ -64,13 +64,13 @@ struct FormPart {
     var value: String { String(decoding: body, as: UTF8.self) }
 }
 
-/// Splits a multipart/form-data body into parts keyed by their `name`.
-func formParts(_ captured: StubURLProtocol.Captured) throws -> [String: FormPart] {
+/// Splits a multipart/form-data body into its parts, in order, with their `name`.
+func formPartList(_ captured: StubURLProtocol.Captured) throws -> [(name: String, part: FormPart)] {
     let contentType = try XCTUnwrap(captured.request.value(forHTTPHeaderField: "Content-Type"))
     XCTAssertTrue(contentType.hasPrefix("multipart/form-data; boundary="))
     let boundary = Data("--\(contentType.components(separatedBy: "boundary=")[1])".utf8)
     let headerEnd = Data("\r\n\r\n".utf8)
-    var parts: [String: FormPart] = [:]
+    var parts: [(name: String, part: FormPart)] = []
     var chunks: [Data] = []
     var rest = captured.body[...]
     while let range = rest.range(of: boundary) {
@@ -83,10 +83,20 @@ func formParts(_ captured: StubURLProtocol.Captured) throws -> [String: FormPart
         let body = Data(chunk[split.upperBound...].dropLast(2))
         let disposition = headers.components(separatedBy: "\r\n").first { $0.hasPrefix("Content-Disposition") } ?? ""
         let name = try XCTUnwrap(disposition.components(separatedBy: "name=\"").dropFirst().first?.components(separatedBy: "\"").first)
-        parts[name] = FormPart(disposition: disposition, body: body)
+        parts.append((name, FormPart(disposition: disposition, body: body)))
     }
     XCTAssertTrue(rest.starts(with: Data("--\r\n".utf8)), "multipart body must end with the closing boundary")
     return parts
+}
+
+/// The multipart parts keyed by `name`; a repeated name keeps its last part.
+func formParts(_ captured: StubURLProtocol.Captured) throws -> [String: FormPart] {
+    Dictionary(try formPartList(captured), uniquingKeysWith: { _, last in last })
+}
+
+/// Every value sent under a repeated multipart field name.
+func formValues(_ captured: StubURLProtocol.Captured, _ name: String) throws -> [String] {
+    try formPartList(captured).filter { $0.name == name }.map(\.part.value)
 }
 
 final class TranscriberTests: XCTestCase {
@@ -100,13 +110,15 @@ final class TranscriberTests: XCTestCase {
         _ provider: TranscriptionProviderID,
         base: String? = nil,
         model: String? = nil,
-        key: String = "test-key"
+        key: String = "test-key",
+        hints: [String] = []
     ) -> TranscriptionConfig {
         TranscriptionConfig(
             provider: provider,
             baseURL: base.map { URL(string: $0)! } ?? provider.defaultBaseURL,
             model: model ?? provider.defaultModel,
-            apiKey: key
+            apiKey: key,
+            hints: hints
         )
     }
 
@@ -266,5 +278,43 @@ final class TranscriberTests: XCTestCase {
             .invalidKey(message: "Invalid API key"),
             config(.elevenLabs), status: 401, fixture: "elevenlabs-401-invalid-key.json"
         )
+    }
+
+    // MARK: Dictionary hints
+
+    func testNoHintsLeaveEveryRequestWithoutHintFields() async throws {
+        _ = try await transcribe(config(.openAICompatible), fixture: "openai-success.json")
+        XCTAssertEqual(Set(try formPartList(captured).map(\.name)), ["file", "model", "languages[]"])
+        _ = try await transcribe(config(.openAICompatible, model: "whisper-large-v3-turbo"), fixture: "openai-success.json")
+        XCTAssertEqual(Set(try formPartList(captured).map(\.name)), ["file", "model", "language"])
+        _ = try await transcribe(config(.elevenLabs), fixture: "elevenlabs-success.json")
+        XCTAssertEqual(Set(try formPartList(captured).map(\.name)), ["file", "model_id", "language_code", "tag_audio_events"])
+        _ = try await transcribe(config(.deepgram), fixture: "deepgram-success.json")
+        XCTAssertFalse(try XCTUnwrap(captured.request.url?.query).contains("keyterm"))
+    }
+
+    func testGPTTranscribeSendsKeywordsAndWhisperSendsAPrompt() async throws {
+        _ = try await transcribe(config(.openAICompatible, hints: ["Kubernetes", "PR"]), fixture: "openai-success.json")
+        XCTAssertEqual(try formValues(captured, "keywords[]"), ["Kubernetes", "PR"])
+        XCTAssertNil(try formParts(captured)["prompt"])
+
+        _ = try await transcribe(config(.openAICompatible, model: "whisper-large-v3-turbo", hints: ["Kubernetes", "PR"]), fixture: "openai-success.json")
+        XCTAssertEqual(try formParts(captured)["prompt"]?.value, "Vocabulary: Kubernetes, PR.")
+        XCTAssertEqual(try formValues(captured, "keywords[]"), [])
+    }
+
+    func testDeepgramSendsEachKeytermStrictlyEncoded() async throws {
+        _ = try await transcribe(config(.deepgram, hints: ["pull request", "C++", "R&D", "Zoë"]), fixture: "deepgram-success.json")
+        let query = try XCTUnwrap(captured.request.url?.query(percentEncoded: true))
+        XCTAssertTrue(query.contains("keyterm=pull%20request"), query)
+        XCTAssertTrue(query.contains("keyterm=C%2B%2B"), query)
+        XCTAssertTrue(query.contains("keyterm=R%26D"), query)
+        XCTAssertTrue(query.contains("keyterm=Zo%C3%AB"), query)
+        XCTAssertTrue(query.contains("model=nova-3"), query)
+    }
+
+    func testElevenLabsSendsRepeatedKeyterms() async throws {
+        _ = try await transcribe(config(.elevenLabs, hints: ["Populi", "kubectl"]), fixture: "elevenlabs-success.json")
+        XCTAssertEqual(try formValues(captured, "keyterms"), ["Populi", "kubectl"])
     }
 }
