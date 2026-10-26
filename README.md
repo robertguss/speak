@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/icon.png" width="128" alt="Speak icon"></p>
+
 # Speak
 
 Open-source, bring-your-own-key dictation for Mac, iPhone, and iPad.
