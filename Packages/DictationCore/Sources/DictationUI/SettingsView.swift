@@ -6,6 +6,9 @@ import DictationCore
 @MainActor
 @Observable
 public final class SettingsModel {
+    /// Posted after a preference edit is saved, so the app can apply it right away.
+    public static let didChange = Notification.Name("SettingsModel.didChange")
+
     public private(set) var prefs = AppPreferences()
     public private(set) var transcriptionKey = ""
     public private(set) var cleanupKey = ""
@@ -27,6 +30,7 @@ public final class SettingsModel {
         do {
             prefs = try store.update(change)
             saveError = nil
+            NotificationCenter.default.post(name: Self.didChange, object: nil)
         } catch {
             saveError = "Couldn't save settings: \(error)"
         }

@@ -1,15 +1,75 @@
-import SwiftUI
+import DictationCore
 import DictationUI
+import SwiftUI
 
 @main
 struct DictationMacApp: App {
-    var body: some Scene {
-        MenuBarExtra("Dictation", systemImage: "mic") {
-            Button("Quit Dictation") { NSApplication.shared.terminate(nil) }
-                .keyboardShortcut("q")
+    @State private var controller: MacDictationController
+    private let indicator: IndicatorPanel
+
+    init() {
+        ClipRecorder.purgeClips()
+        let controller = MacDictationController()
+        _controller = State(initialValue: controller)
+        indicator = IndicatorPanel(controller: controller)
+        controller.activateHotkey()
+        NotificationCenter.default.addObserver(forName: SettingsModel.didChange, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { controller.activateHotkey() }
         }
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { controller.activateHotkey() }
+        }
+    }
+
+    var body: some Scene {
+        MenuBarExtra {
+            MenuContent(controller: controller)
+        } label: {
+            Image(systemName: menuIcon)
+        }
+
+        Window("Set up Dictation", id: "onboarding") {
+            OnboardingView { controller.activateHotkey() }
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(OnboardingView.permissionsGranted ? .suppressed : .presented)
+
         Settings {
             SettingsView()
+                .frame(width: 520, height: 620)
         }
+    }
+
+    private var menuIcon: String {
+        switch controller.phase {
+        case .recording: "mic.fill"
+        case .transcribing: "waveform"
+        case .message(_, true): "exclamationmark.triangle"
+        default: "mic"
+        }
+    }
+}
+
+private struct MenuContent: View {
+    let controller: MacDictationController
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        if let error = controller.lastError {
+            Text("Last error: \(error)")
+            Divider()
+        }
+        if !controller.hotkeyActive {
+            Text("Dictation key inactive: grant Accessibility")
+        }
+        Button("Set Up Permissions…") {
+            NSApp.activate()
+            openWindow(id: "onboarding")
+        }
+        SettingsLink { Text("Settings…") }
+            .keyboardShortcut(",")
+        Divider()
+        Button("Quit Dictation") { NSApplication.shared.terminate(nil) }
+            .keyboardShortcut("q")
     }
 }

@@ -59,6 +59,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.robertguss.dictation.mac.tests
         GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Dictation.app/Contents/MacOS/Dictation
+        BUNDLE_LOADER: $(TEST_HOST)
 
   DictationiOS:
     type: application
