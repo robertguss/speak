@@ -31,8 +31,6 @@ public final class ClipRecorder: @unchecked Sendable {
         try? FileManager.default.removeItem(at: clipDirectory)
     }
 
-    public var isEngineRunning: Bool { engine.isRunning }
-
     public func startEngine() throws {
         guard !engine.isRunning else { return }
         let input = engine.inputNode

@@ -3,7 +3,6 @@ import ApplicationServices
 import DictationCore
 import SwiftUI
 
-/// First-run permissions: Microphone and Accessibility, plus the Fn key setting (R5).
 struct OnboardingView: View {
     let onAccessibilityGranted: () -> Void
     @State private var micStatus = AVCaptureDevice.authorizationStatus(for: .audio)

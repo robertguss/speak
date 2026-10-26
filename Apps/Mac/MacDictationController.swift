@@ -2,7 +2,6 @@ import AppKit
 import DictationCore
 import Observation
 
-/// Runs one dictation at a time on the Mac: hotkey → record → transcribe → paste (R1–R4, R16).
 @MainActor
 @Observable
 final class MacDictationController {
@@ -15,7 +14,6 @@ final class MacDictationController {
 
     private(set) var phase = Phase.idle
     private(set) var level: Float = 0
-    /// Shown in the menu until the next successful dictation.
     private(set) var lastError: String?
     private(set) var hotkeyActive = false
 
@@ -36,7 +34,6 @@ final class MacDictationController {
         }
     }
 
-    /// Creates the event tap once Accessibility is granted. Safe to call repeatedly.
     func activateHotkey() {
         if tap == nil {
             tap = ModifierKeyTap { [weak self] event in

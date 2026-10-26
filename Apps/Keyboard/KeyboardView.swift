@@ -1,6 +1,5 @@
 import UIKit
 
-/// The minimal dictation keyboard: status line, mic, globe, space, delete, return (R9).
 final class KeyboardView: UIView {
     enum Mic {
         case idle, recording, busy

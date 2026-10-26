@@ -22,8 +22,7 @@ public struct HotkeyStateMachine: Sendable {
         case idle
         case down(since: TimeInterval)
         case latched
-        /// Recording already ended; swallow the matching key up.
-        case awaitingRelease
+        case swallowingRelease
     }
 
     public static let holdThreshold: TimeInterval = 0.3
@@ -45,12 +44,12 @@ public struct HotkeyStateMachine: Sendable {
             state = .idle
             return .stop
         case (.down, .otherKey):
-            state = .awaitingRelease
+            state = .swallowingRelease
             return .cancel
         case (.latched, .keyDown):
-            state = .awaitingRelease
+            state = .swallowingRelease
             return .stop
-        case (.awaitingRelease, .keyUp):
+        case (.swallowingRelease, .keyUp):
             state = .idle
             return nil
         default:

@@ -7,7 +7,7 @@ import Foundation
 /// so a fresh install or an older build never wipes settings made on another device.
 public struct SettingsStore: Sendable {
     let preferences: any BlobStore
-    public let secrets: SecretStore
+    let secrets: SecretStore
 
     public init(preferences: any BlobStore, secrets: SecretStore) {
         self.preferences = preferences

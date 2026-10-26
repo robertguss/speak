@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Shown after the keyboard opens the app: the session is ready, go back and dictate (R7).
 struct SwipeBackView: View {
     let session: FlowSessionController
     let dismiss: () -> Void

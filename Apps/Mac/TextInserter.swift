@@ -1,12 +1,9 @@
 import AppKit
 import ApplicationServices
 
-/// Pastes text at the cursor through the clipboard and a synthesized ⌘V, then puts the
-/// previous clipboard back (R3, KTD8).
 struct TextInserter: Sendable {
     enum Outcome: Equatable {
         case pasted
-        /// Accessibility isn't granted, so the text was left on the clipboard.
         case copiedNeedsPaste
     }
 

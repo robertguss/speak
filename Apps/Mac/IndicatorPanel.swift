@@ -1,8 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// A small floating status pill near the bottom of the active screen (R4).
-/// It never becomes key or main, so the target app keeps focus.
 @MainActor
 final class IndicatorPanel {
     private let controller: MacDictationController

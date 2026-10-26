@@ -17,7 +17,6 @@ public final class SettingsModel {
 
     public init(store: SettingsStore = .keychain()) {
         self.store = store
-        reload()
     }
 
     /// Re-reads everything; there is no change notification for synced keychain items.
@@ -103,10 +102,10 @@ public struct SettingsView<Header: View>: View {
                     model.edit { $0.openAICompatibleBaseURL = url }
                 }
             }
-            CommitField("Model", value: model.prefs.model(for: provider)) { value in
+            SaveOnCommitField("Model", value: model.prefs.model(for: provider)) { value in
                 model.edit { $0.setModel(value, for: provider) }
             }
-            CommitField("API key", value: model.transcriptionKey, secure: true) { model.setKey($0, role: .transcription) }
+            SaveOnCommitField("API key", value: model.transcriptionKey, secure: true) { model.setKey($0, role: .transcription) }
                 .id("transcription-key-\(model.prefs.baseURL(for: provider).host() ?? "")")
             if provider == .openAICompatible {
                 Text("Leave the key empty for local servers that don't need one.")
@@ -123,10 +122,10 @@ public struct SettingsView<Header: View>: View {
                 URLField("Base URL", url: model.prefs.cleanupBaseURL) { url in
                     model.edit { $0.cleanupBaseURL = url }
                 }
-                CommitField("Model", value: model.prefs.cleanupModel) { value in
+                SaveOnCommitField("Model", value: model.prefs.cleanupModel) { value in
                     model.edit { $0.cleanupModel = value }
                 }
-                CommitField("API key", value: model.cleanupKey, secure: true) { model.setKey($0, role: .cleanup) }
+                SaveOnCommitField("API key", value: model.cleanupKey, secure: true) { model.setKey($0, role: .cleanup) }
                     .id("cleanup-key-\(model.prefs.cleanupBaseURL.host() ?? "")")
                 PromptEditor(value: model.prefs.cleanupPrompt ?? DefaultCleanupPrompt.text) { value in
                     model.edit { $0.cleanupPrompt = value }
@@ -183,9 +182,7 @@ extension SettingsView where Header == EmptyView {
     }
 }
 
-/// A text field that saves when the user submits or leaves it, not on every keystroke,
-/// so typing doesn't push a keychain write per character.
-private struct CommitField: View {
+private struct SaveOnCommitField: View {
     let title: String
     let value: String
     let secure: Bool
@@ -243,7 +240,7 @@ private struct URLField: View {
     }
 
     var body: some View {
-        CommitField(title, value: url.absoluteString) { text in
+        SaveOnCommitField(title, value: url.absoluteString) { text in
             guard let url = URL(string: text), ["http", "https"].contains(url.scheme), url.host() != nil else { return }
             onCommit(url)
         }

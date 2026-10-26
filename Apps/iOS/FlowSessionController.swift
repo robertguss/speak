@@ -3,16 +3,12 @@ import DictationCore
 import Observation
 import UIKit
 
-/// Owns the background recording session that the keyboard drives (R7, R8, KTD4–KTD6).
-/// The rules live in `FlowSessionPolicy`; this class supplies the timers, audio, and files.
 @MainActor
 @Observable
 final class FlowSessionController {
     private(set) var isActive = false
-    /// Why the session couldn't start, shown instead of the swipe-back screen.
-    private(set) var startError: String?
-    /// Shown on the main screen until the next successful dictation.
     private(set) var lastError: String?
+    var startError: String? { policy.state.sessionError }
 
     private let files: FlowFiles
     private let settings: SettingsStore
@@ -48,7 +44,6 @@ final class FlowSessionController {
             recorder.stopEngine()
             return fail("Microphone unavailable — open the Dictation app")
         }
-        startError = nil
         isActive = true
         policy.idleTimeout = TimeInterval(settings.load().idleTimeoutMinutes * 60)
         policy.sessionStarted(at: Date())
@@ -56,11 +51,9 @@ final class FlowSessionController {
             MainActor.assumeIsolated { self?.tick() }
         }
         observeAudioSession()
-        write()
         handleCommand()
     }
 
-    /// Ends the session. Audio captured so far is still transcribed and delivered.
     func end() {
         guard isActive else { return }
         if let id = policy.endSession() {
@@ -78,7 +71,6 @@ final class FlowSessionController {
     }
 
     private func fail(_ message: String) {
-        startError = message
         policy.sessionFailed(message)
         write()
     }
@@ -100,8 +92,7 @@ final class FlowSessionController {
                 try recorder.beginClip()
             } catch {
                 if let id = policy.state.activeRequestID {
-                    policy.finish(id, error: DictationError.microphoneUnavailable(message: error.localizedDescription).userMessage, at: Date())
-                    write()
+                    complete(id, error: DictationError.microphoneUnavailable(message: error.localizedDescription).userMessage)
                 }
             }
         case .finishClip(let id):
@@ -116,10 +107,7 @@ final class FlowSessionController {
     /// Runs the pipeline under a background task, so the request completes even if
     /// the audio that keeps the app alive stops.
     private func finish(_ id: UUID, clip: RecordedClip?) {
-        guard let clip else {
-            policy.finish(id, error: "Recording failed", at: Date())
-            return write()
-        }
+        guard let clip else { return complete(id, error: "Recording failed") }
         var task = UIBackgroundTaskIdentifier.invalid
         task = UIApplication.shared.beginBackgroundTask(withName: "Transcribe") { [weak self] in
             MainActor.assumeIsolated {

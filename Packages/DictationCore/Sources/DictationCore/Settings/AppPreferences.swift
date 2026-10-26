@@ -94,7 +94,7 @@ public struct OpenAICompatiblePreset: Sendable, Identifiable {
     public var id: String { name }
 
     public static let all = [
-        OpenAICompatiblePreset(name: "OpenAI", baseURL: URL(string: "https://api.openai.com/v1")!, model: "gpt-transcribe"),
+        OpenAICompatiblePreset(name: "OpenAI", baseURL: TranscriptionProviderID.openAICompatible.defaultBaseURL, model: TranscriptionProviderID.openAICompatible.defaultModel),
         OpenAICompatiblePreset(name: "Groq", baseURL: URL(string: "https://api.groq.com/openai/v1")!, model: "whisper-large-v3-turbo"),
     ]
 }

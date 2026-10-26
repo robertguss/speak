@@ -9,7 +9,6 @@ enum TranscriptionHTTP {
         return request
     }
 
-    /// Sends the request and returns the JSON object of a 2xx response, or throws a `DictationError`.
     static func send(_ request: URLRequest, session: URLSession) async throws -> [String: Any] {
         let data: Data
         let response: URLResponse

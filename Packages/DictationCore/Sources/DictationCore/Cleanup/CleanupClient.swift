@@ -16,6 +16,8 @@ public struct CleanupConfig: Sendable, Equatable {
 
 /// Sends a transcript to an OpenAI-compatible chat endpoint for cleanup (R12, KTD11).
 public struct CleanupClient: Sendable {
+    static let timeout: TimeInterval = 30
+
     let config: CleanupConfig
     let session: URLSession
 
@@ -34,7 +36,7 @@ public struct CleanupClient: Sendable {
                 ["role": "user", "content": "<\(tag)>\n\(transcript)\n</\(tag)>"],
             ],
         ]
-        var request = URLRequest(url: config.baseURL.appending(path: "chat").appending(path: "completions"), timeoutInterval: 30)
+        var request = URLRequest(url: config.baseURL.appending(path: "chat").appending(path: "completions"), timeoutInterval: Self.timeout)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !config.apiKey.isEmpty {

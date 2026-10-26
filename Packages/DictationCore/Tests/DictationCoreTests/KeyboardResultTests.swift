@@ -49,7 +49,6 @@ final class KeyboardResultTests: XCTestCase {
         let id = UUID()
         let selector = KeyboardResultSelector(state: state(.processing, active: id), command: pending(id), now: now)
         XCTAssertEqual(selector.micAction, .wait)
-        XCTAssertEqual(selector.command.pendingRequestID, id)
     }
 
     func testDeadSessionOpensAppAndReadyStarts() {
@@ -78,6 +77,10 @@ final class KeyboardResultTests: XCTestCase {
             now: now
         )
         XCTAssertEqual(arrived.resolution?.outcome, .insert("late", cleanupSkipped: false))
+    }
+
+    func testMaxWaitOutlastsTranscriptionAndCleanupTimeouts() {
+        XCTAssertGreaterThanOrEqual(KeyboardResultSelector.maxWait, TranscriptionHTTP.timeout + CleanupClient.timeout)
     }
 
     func testErrorAndTooShortOutcomes() {

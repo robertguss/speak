@@ -1,19 +1,18 @@
 import DictationCore
 import UIKit
 
-/// Signals the app's session and inserts its results. Every decision comes from the
-/// shared files through `KeyboardResultSelector`, so a recreated view behaves the same (R6–R9, KTD6).
 final class KeyboardViewController: UIInputViewController {
+    private static let startAckTimeout: TimeInterval = 1
+    private static let stopAckTimeout: TimeInterval = 3
+
     private let keyboard = KeyboardView()
     private let files = FlowFiles.appGroup()
     private var bell: DarwinBell?
     private var poll: Timer?
     private var deleteRepeat: Timer?
     private var transient: (text: String, until: Date)?
-    /// The last command this view issued, for the watchdog.
-    private var issued: (kind: FlowCommand.Kind, id: UUID, at: Date)?
-    /// The session looked dead; the next mic tap opens the app.
-    private var reconnect = false
+    private var watchdogCommand: (kind: FlowCommand.Kind, id: UUID, at: Date)?
+    private var opensAppOnNextMic = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,7 +50,7 @@ final class KeyboardViewController: UIInputViewController {
         poll?.invalidate()
         bell = nil
         deleteUp()
-        abandonPendingRequest()
+        abandonPendingRequestOnDismiss()
     }
 
     // MARK: - Dictation
@@ -64,8 +63,8 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func micTapped() {
         guard let (state, command) = read() else { return }
         let selector = KeyboardResultSelector(state: state, command: command, now: Date())
-        if reconnect {
-            reconnect = false
+        if opensAppOnNextMic {
+            opensAppOnNextMic = false
             return openApp()
         }
         switch selector.micAction {
@@ -83,7 +82,7 @@ final class KeyboardViewController: UIInputViewController {
         command.issue(kind, requestID: id, at: now)
         try? files?.write(command)
         DarwinBell.ring(DarwinBell.toApp)
-        issued = (kind, id, now)
+        watchdogCommand = (kind, id, now)
     }
 
     /// Keyboard extensions can't call `UIApplication.shared`, but the host app's
@@ -100,9 +99,7 @@ final class KeyboardViewController: UIInputViewController {
         show("Open the Dictation app to start a session", for: 4)
     }
 
-    /// When the keyboard goes away mid-dictation, stop recording and drop the result,
-    /// so a stale transcript never lands in a different text field.
-    private func abandonPendingRequest() {
+    private func abandonPendingRequestOnDismiss() {
         guard let (state, command) = read(), let pending = command.pendingRequestID else { return }
         var updated = command
         if state.phase == .recording, state.activeRequestID == pending {
@@ -111,7 +108,7 @@ final class KeyboardViewController: UIInputViewController {
         updated.abandoned = true
         try? files?.write(updated)
         DarwinBell.ring(DarwinBell.toApp)
-        issued = nil
+        watchdogCommand = nil
     }
 
     private func refresh() {
@@ -124,7 +121,7 @@ final class KeyboardViewController: UIInputViewController {
             consumed.consumedResultID = id
             try? files?.write(consumed)
             DarwinBell.ring(DarwinBell.toApp)
-            issued = nil
+            watchdogCommand = nil
             switch outcome {
             case .insert(let text, let cleanupSkipped):
                 textDocumentProxy.insertText(KeyboardResultSelector.textToInsert(text, after: textDocumentProxy.documentContextBeforeInput))
@@ -140,25 +137,24 @@ final class KeyboardViewController: UIInputViewController {
         render(state, selector: selector, now: now)
     }
 
-    /// If the app doesn't react to a start within 1 s, or a stop within 3 s, the session is dead.
     private func checkWatchdog(_ state: FlowState, _ command: FlowCommand, now: Date) {
-        guard let issued, command.pendingRequestID == issued.id else { return }
-        let elapsed = now.timeIntervalSince(issued.at)
-        let stuck = switch issued.kind {
-        case .start: elapsed > 1 && state.activeRequestID != issued.id
-        case .stop, .cancel: elapsed > 3 && !(state.activeRequestID == issued.id && state.phase != .recording)
+        guard let watchdogCommand, command.pendingRequestID == watchdogCommand.id else { return }
+        let elapsed = now.timeIntervalSince(watchdogCommand.at)
+        let stuck = switch watchdogCommand.kind {
+        case .start: elapsed > Self.startAckTimeout && state.activeRequestID != watchdogCommand.id
+        case .stop, .cancel: elapsed > Self.stopAckTimeout && !(state.activeRequestID == watchdogCommand.id && state.phase != .recording)
         }
         guard stuck else { return }
         var cleared = command
-        cleared.consumedResultID = issued.id
+        cleared.consumedResultID = watchdogCommand.id
         try? files?.write(cleared)
-        self.issued = nil
-        reconnect = true
+        self.watchdogCommand = nil
+        opensAppOnNextMic = true
         show("Tap mic to reconnect", for: 4)
     }
 
     private func render(_ state: FlowState, selector: KeyboardResultSelector, now: Date) {
-        let action = reconnect ? .openApp : selector.micAction
+        let action = opensAppOnNextMic ? .openApp : selector.micAction
         let status: String
         switch action {
         case .openApp:

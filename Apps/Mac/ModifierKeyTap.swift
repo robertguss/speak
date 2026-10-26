@@ -3,21 +3,15 @@ import DictationCore
 import Foundation
 import os
 
-/// Watches one modifier key system-wide with a session event tap (KTD2).
-/// It never swallows events, and it re-enables itself when macOS disables it.
-/// Creating the tap needs the Accessibility permission.
 final class ModifierKeyTap: @unchecked Sendable {
     private let hotkey = OSAllocatedUnfairLock(initialState: MacHotkey.rightOption)
     private let isDown = OSAllocatedUnfairLock(initialState: false)
     private let onEvent: @Sendable (HotkeyStateMachine.Event) -> Void
     private var tap: CFMachPort?
 
-    /// `onEvent` is called on the tap's own thread.
     init(onEvent: @escaping @Sendable (HotkeyStateMachine.Event) -> Void) {
         self.onEvent = onEvent
     }
-
-    var isRunning: Bool { tap != nil }
 
     func setHotkey(_ key: MacHotkey) {
         hotkey.withLock { $0 = key }
@@ -79,15 +73,17 @@ final class ModifierKeyTap: @unchecked Sendable {
         }
     }
 
-    /// Fn uses its own flag; the right-side modifiers use device-specific flag bits,
-    /// so the left-side key of the same kind doesn't trigger dictation.
+    private static let rightOptionMask: UInt64 = 0x40     // NX_DEVICERALTKEYMASK
+    private static let rightCommandMask: UInt64 = 0x10    // NX_DEVICERCMDKEYMASK
+    private static let rightControlMask: UInt64 = 0x2000  // NX_DEVICERCTLKEYMASK
+
     private static func isPressed(_ key: MacHotkey, _ event: CGEvent) -> Bool {
         let flags = event.flags
         switch key {
         case .fn: return flags.contains(.maskSecondaryFn)
-        case .rightOption: return flags.rawValue & 0x40 != 0     // NX_DEVICERALTKEYMASK, keycode 61
-        case .rightCommand: return flags.rawValue & 0x10 != 0    // NX_DEVICERCMDKEYMASK, keycode 54
-        case .rightControl: return flags.rawValue & 0x2000 != 0  // NX_DEVICERCTLKEYMASK, keycode 62
+        case .rightOption: return flags.rawValue & rightOptionMask != 0
+        case .rightCommand: return flags.rawValue & rightCommandMask != 0
+        case .rightControl: return flags.rawValue & rightControlMask != 0
         }
     }
 }
