@@ -35,7 +35,7 @@ final class DictionaryModel {
         } catch DictionaryStoreError.duplicate {
             return "Already in your dictionary"
         } catch {
-            self.error = "Couldn't save the entry: \(error)"
+            return "Couldn't save the entry: \(error)"
         }
         reload()
         return nil
@@ -44,16 +44,16 @@ final class DictionaryModel {
     func toggleStar(_ entry: DictionaryEntry) {
         var starred = entry
         starred.starred.toggle()
-        _ = save(starred, isNew: false)
+        if let message = save(starred, isNew: false) { error = message }
     }
 
     func delete(_ entry: DictionaryEntry) {
         do {
             try store.delete(id: entry.id)
+            reload()
         } catch {
             self.error = "Couldn't delete the entry: \(error)"
         }
-        reload()
     }
 
     func importCSV(_ url: URL) {
@@ -66,7 +66,7 @@ final class DictionaryModel {
 
     #if os(macOS)
     func importWispr() {
-        runImport { ImportBatch(entries: try WisprDatabaseReader.read(from: WisprDatabaseReader.defaultURL), skipped: 0) }
+        runImport { try WisprDatabaseReader.read(from: WisprDatabaseReader.defaultURL) }
     }
     #endif
 

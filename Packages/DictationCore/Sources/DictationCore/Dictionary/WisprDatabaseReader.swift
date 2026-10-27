@@ -25,7 +25,7 @@ public enum WisprDatabaseReader {
     static let personalTeamID = "00000000-0000-0000-0000-000000000000"
     static let requiredColumns: Set = ["phrase", "replacement", "isDeleted", "isSnippet", "teamDictionaryId", "isStarred", "frequencyUsed"]
 
-    public static func read(from source: URL) throws -> [DictionaryEntry] {
+    public static func read(from source: URL) throws -> ImportBatch {
         guard FileManager.default.fileExists(atPath: source.path) else { throw WisprImportError.notFound }
         let folder = FileManager.default.temporaryDirectory.appending(path: "speak-wispr-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -56,7 +56,7 @@ public enum WisprDatabaseReader {
         guard step == SQLITE_DONE else { throw WisprImportError.unreadable(String(cString: sqlite3_errstr(step))) }
     }
 
-    private static func entries(in snapshot: URL) throws -> [DictionaryEntry] {
+    private static func entries(in snapshot: URL) throws -> ImportBatch {
         // The snapshot keeps the source's WAL flag, which a read-only connection can't open without -shm.
         // It's a private copy, so open it read-write.
         let db = try open(snapshot.path, flags: SQLITE_OPEN_READWRITE)
@@ -73,19 +73,24 @@ public enum WisprDatabaseReader {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS xxx"
-        return try rows(db, sql).compactMap { row in
+        var batch = ImportBatch(entries: [], skipped: 0)
+        for row in try rows(db, sql) {
             let phrase = (row[0] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let replacement = (row[1] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !phrase.isEmpty else { return nil }
-            return DictionaryEntry(
+            guard !phrase.isEmpty else {
+                batch.skipped += 1
+                continue
+            }
+            batch.entries.append(DictionaryEntry(
                 kind: replacement.isEmpty ? .word : .replacement,
                 text: replacement.isEmpty ? phrase : replacement,
                 heardAs: phrase,
                 starred: row[2] == "1",
                 useCount: Int(row[3] ?? "") ?? 0,
                 addedAt: row[4].flatMap(formatter.date(from:)) ?? now
-            )
+            ))
         }
+        return batch
     }
 
     private static func open(_ path: String, flags: Int32) throws -> OpaquePointer {

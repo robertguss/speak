@@ -55,6 +55,7 @@ final class WisprDatabaseTests: XCTestCase {
     INSERT INTO Dictionary (id, phrase, replacement, createdAt, isSnippet) VALUES ('3', 'sig', 'Best, Rob', '2026-01-03 00:00:00.000 +00:00', 1);
     INSERT INTO Dictionary (id, phrase, createdAt, teamDictionaryId) VALUES ('4', 'TeamWord', '2026-01-03 00:00:00.000 +00:00', 'abc');
     INSERT INTO Dictionary (id, phrase, createdAt, isDeleted) VALUES ('5', 'Deleted', '2026-01-03 00:00:00.000 +00:00', 1);
+    INSERT INTO Dictionary (id, phrase, createdAt) VALUES ('7', '   ', '2026-01-03 00:00:00.000 +00:00');
     """
 
     private func open(_ url: URL) throws -> OpaquePointer {
@@ -82,9 +83,11 @@ final class WisprDatabaseTests: XCTestCase {
     }
 
     func testImportsOnlyLivePersonalNonSnippetEntries() throws {
-        let entries = try WisprDatabaseReader.read(from: makeDatabase())
+        let batch = try WisprDatabaseReader.read(from: makeDatabase())
+        let entries = batch.entries
 
         XCTAssertEqual(entries.count, 2)
+        XCTAssertEqual(batch.skipped, 1)
         let word = try XCTUnwrap(entries.first { $0.kind == .word })
         XCTAssertEqual(word.text, "Kubernetes")
         XCTAssertTrue(word.starred)
@@ -102,7 +105,7 @@ final class WisprDatabaseTests: XCTestCase {
         let url = try makeDatabase(wal: true)
         try? FileManager.default.removeItem(atPath: url.path + "-wal")
         try? FileManager.default.removeItem(atPath: url.path + "-shm")
-        XCTAssertEqual(try WisprDatabaseReader.read(from: url).count, 2)
+        XCTAssertEqual(try WisprDatabaseReader.read(from: url).entries.count, 2)
     }
 
     func testReadsRowsStillInTheWALWhileTheAppIsOpen() throws {
@@ -113,7 +116,7 @@ final class WisprDatabaseTests: XCTestCase {
         exec(app, "INSERT INTO Dictionary (id, phrase, createdAt) VALUES ('6', 'Populi', '2026-01-04 00:00:00.000 +00:00');")
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path + "-wal"))
 
-        XCTAssertTrue(try WisprDatabaseReader.read(from: url).contains { $0.text == "Populi" })
+        XCTAssertTrue(try WisprDatabaseReader.read(from: url).entries.contains { $0.text == "Populi" })
     }
 
     func testNeverChangesTheSourceDatabase() throws {

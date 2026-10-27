@@ -81,8 +81,9 @@ public struct DictionaryStore: Sendable {
     /// Replaces the stored entry with the same ID; throws `.duplicate` when the edit collides with another entry.
     public func update(_ entry: DictionaryEntry) throws {
         let stored = try items.readAll()
+        let keyUnchanged = stored[entry.id].flatMap { Self.decode([$0]).first }?.matchKey == entry.matchKey
         let others = Self.decode(stored.filter { $0.key != entry.id }.values)
-        guard !others.contains(where: { $0.matchKey == entry.matchKey }) else { throw DictionaryStoreError.duplicate }
+        guard keyUnchanged || !others.contains(where: { $0.matchKey == entry.matchKey }) else { throw DictionaryStoreError.duplicate }
         try write(entry, existing: stored[entry.id])
     }
 

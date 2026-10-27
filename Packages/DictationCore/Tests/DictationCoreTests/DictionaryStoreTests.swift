@@ -18,6 +18,19 @@ final class DictionaryStoreTests: XCTestCase {
         XCTAssertEqual(Set(try DictionaryStore(items: synced).entries().map(\.text)), ["Kubernetes", "Populi", "kubectl"])
     }
 
+    func testSameWordAddedOnTwoDevicesCanStillBeStarred() throws {
+        let mac = InMemoryItemStore()
+        let phone = InMemoryItemStore()
+        try DictionaryStore(items: mac).add(.word("Kubernetes"))
+        try DictionaryStore(items: phone).add(.word("Kubernetes"))
+        let store = DictionaryStore(items: InMemoryItemStore(items: mac.snapshot.merging(phone.snapshot) { a, _ in a }))
+
+        var entry = try XCTUnwrap(store.entries().first)
+        entry.starred = true
+        try store.update(entry)
+        XCTAssertEqual(try store.entries().filter(\.starred).map(\.id), [entry.id])
+    }
+
     func testDeleteRemovesOnlyThatEntryAndEditsKeepUnknownFields() throws {
         let items = InMemoryItemStore()
         let store = DictionaryStore(items: items)
