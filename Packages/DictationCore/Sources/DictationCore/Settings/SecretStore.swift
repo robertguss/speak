@@ -72,6 +72,52 @@ public struct KeychainBlobStore: BlobStore {
     }
 }
 
+public protocol ItemStore: Sendable {
+    func readAll() throws -> [String: Data]
+    func write(_ data: Data, id: String) throws
+    func delete(id: String) throws
+}
+
+/// iCloud Keychain resolves conflicts per item, so entries added on different devices never overwrite each other.
+public struct KeychainItemStore: ItemStore {
+    static let prefix = "dictionary:"
+    public let accessGroup: String
+
+    public init(accessGroup: String) {
+        self.accessGroup = accessGroup
+    }
+
+    public func readAll() throws -> [String: Data] {
+        var query = KeychainBlobStore.sharedAttributes(accessGroup: accessGroup)
+        query[kSecReturnAttributes as String] = true
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitAll
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecItemNotFound { return [:] }
+        guard status == errSecSuccess else { throw KeychainError(status: status) }
+        var items: [String: Data] = [:]
+        for item in result as? [[String: Any]] ?? [] {
+            guard let account = item[kSecAttrAccount as String] as? String, account.hasPrefix(Self.prefix),
+                  let data = item[kSecValueData as String] as? Data else { continue }
+            items[String(account.dropFirst(Self.prefix.count))] = data
+        }
+        return items
+    }
+
+    public func write(_ data: Data, id: String) throws {
+        try blob(id).write(data)
+    }
+
+    public func delete(id: String) throws {
+        try blob(id).delete()
+    }
+
+    private func blob(_ id: String) -> KeychainBlobStore {
+        KeychainBlobStore(account: Self.prefix + id, accessGroup: accessGroup)
+    }
+}
+
 /// API keys, stored as one dictionary keyed by `<role>:<host>` (KTD7).
 /// Writes re-read the item and change only one entry, so keys entered on another device survive.
 public struct SecretStore: Sendable {

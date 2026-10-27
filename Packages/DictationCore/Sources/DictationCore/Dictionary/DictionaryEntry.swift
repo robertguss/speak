@@ -24,14 +24,13 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
         useCount: Int = 0,
         addedAt: Date = Date()
     ) {
-        self.id = ""
         self.kind = kind
         self.text = text
         self.heardAs = kind == .replacement ? heardAs : nil
         self.starred = starred
         self.useCount = useCount
         self.addedAt = addedAt
-        self.id = id ?? Self.itemID(for: matchKey)
+        self.id = id ?? Self.itemID(for: Self.matchKey(kind: kind, text: text, heardAs: self.heardAs))
     }
 
     public static func word(_ text: String) -> DictionaryEntry {
@@ -55,6 +54,10 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
     }
 
     var matchKey: String {
+        Self.matchKey(kind: kind, text: text, heardAs: heardAs)
+    }
+
+    private static func matchKey(kind: Kind, text: String, heardAs: String?) -> String {
         switch kind {
         case .word: "word:" + text.lowercased()
         case .replacement: "replacement:" + (heardAs ?? "").lowercased()
