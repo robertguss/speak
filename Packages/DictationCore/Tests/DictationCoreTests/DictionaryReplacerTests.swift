@@ -35,6 +35,6 @@ final class DictionaryReplacerTests: XCTestCase {
 
     func testWordsAndEmptyHeardAsAreIgnored() {
         let entries: [DictionaryEntry] = [.word("PR"), DictionaryEntry(kind: .replacement, text: "X", heardAs: "  ")]
-        XCTAssertEqual(replace("pr stays as dictated", entries), "pr stays as dictated")
+        XCTAssertEqual(replace("pr - stays as dictated", entries), "pr - stays as dictated")
     }
 }
