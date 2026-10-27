@@ -23,13 +23,12 @@ public struct KeychainBlobStore: BlobStore {
     }
 
     private var baseQuery: [String: Any] {
-        var query = Self.query(accessGroup: accessGroup)
+        var query = Self.sharedAttributes(accessGroup: accessGroup)
         query[kSecAttrAccount as String] = account
         return query
     }
 
-    /// The attributes every Speak item shares: synced, in the shared access group.
-    static func query(accessGroup: String) -> [String: Any] {
+    static func sharedAttributes(accessGroup: String) -> [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.robertguss.speak",

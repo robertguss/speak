@@ -33,7 +33,6 @@ public struct DictationPipeline: Sendable {
         if config.apiKey.isEmpty && config.provider != .openAICompatible {
             throw DictationError.missingKey
         }
-        // No host or key depends on the dictionary, so an unreadable one never fails the dictation (R12).
         let dictionary = (try? settings.dictionary.entries()) ?? []
         config.hints = VocabularyHints.select(dictionary, provider: config.provider, model: config.model).terms
         let raw = try await makeTranscriber(config).transcribe(audioFile: clip)

@@ -26,7 +26,6 @@ final class DictionaryStoreTests: XCTestCase {
         try store.add(keep)
         try store.add(gone)
 
-        // A newer build wrote a field this build doesn't know.
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(items.snapshot[keep.id])) as? [String: Any])
         object["pronunciation"] = "koo-ber-net-eez"
         try items.write(JSONSerialization.data(withJSONObject: object), id: keep.id)

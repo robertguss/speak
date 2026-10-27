@@ -223,7 +223,6 @@ final class PipelineTests: XCTestCase {
     }
 }
 
-/// Records the configs the pipeline hands its transcriber.
 private final class ConfigLog: Sendable {
     let all = Mutex<[TranscriptionConfig]>([])
 }

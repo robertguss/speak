@@ -1,22 +1,16 @@
 import Foundation
 
-/// One custom-dictionary entry (R1, KTD2).
 public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
     public enum Kind: String, Codable, Sendable {
-        /// A term to spell exactly as `text`.
         case word
-        /// When the transcript contains `heardAs`, write `text` instead.
         case replacement
     }
 
     public var id: String
     public var kind: Kind
-    /// The word, or the replacement's output.
     public var text: String
-    /// The misheard phrase; replacements only.
     public var heardAs: String?
     public var starred: Bool
-    /// Usage carried over from a Wispr Flow import. Speak never increments it.
     public var useCount: Int
     public var addedAt: Date
 
@@ -58,7 +52,6 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
         addedAt = (try? c.decodeIfPresent(Date.self, forKey: .addedAt)) ?? .distantPast
     }
 
-    /// Two entries match when they would do the same job (R10): words by text, replacements by what is heard.
     var matchKey: String {
         switch kind {
         case .word: "word:" + text.lowercased()
@@ -66,7 +59,6 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
         }
     }
 
-    /// Hint priority (R5): starred, then most used, then newest.
     static func priority(_ a: DictionaryEntry, _ b: DictionaryEntry) -> Bool {
         if a.starred != b.starred { return a.starred }
         if a.useCount != b.useCount { return a.useCount > b.useCount }

@@ -64,7 +64,6 @@ struct FormPart {
     var value: String { String(decoding: body, as: UTF8.self) }
 }
 
-/// Splits a multipart/form-data body into its parts, in order, with their `name`.
 func formPartList(_ captured: StubURLProtocol.Captured) throws -> [(name: String, part: FormPart)] {
     let contentType = try XCTUnwrap(captured.request.value(forHTTPHeaderField: "Content-Type"))
     XCTAssertTrue(contentType.hasPrefix("multipart/form-data; boundary="))
@@ -89,12 +88,10 @@ func formPartList(_ captured: StubURLProtocol.Captured) throws -> [(name: String
     return parts
 }
 
-/// The multipart parts keyed by `name`; a repeated name keeps its last part.
 func formParts(_ captured: StubURLProtocol.Captured) throws -> [String: FormPart] {
     Dictionary(try formPartList(captured), uniquingKeysWith: { _, last in last })
 }
 
-/// Every value sent under a repeated multipart field name.
 func formValues(_ captured: StubURLProtocol.Captured, _ name: String) throws -> [String] {
     try formPartList(captured).filter { $0.name == name }.map(\.part.value)
 }

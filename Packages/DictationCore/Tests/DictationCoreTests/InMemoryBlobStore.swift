@@ -27,7 +27,6 @@ final class InMemoryBlobStore: BlobStore, @unchecked Sendable {
     }
 }
 
-/// Stands in for a set of keychain items in tests.
 final class InMemoryItemStore: ItemStore, @unchecked Sendable {
     private let lock = NSLock()
     private var items: [String: Data]

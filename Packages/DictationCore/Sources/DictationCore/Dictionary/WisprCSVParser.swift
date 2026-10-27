@@ -1,6 +1,5 @@
 import Foundation
 
-/// Entries read from an import source, plus how many rows couldn't be used.
 public struct ImportBatch: Equatable, Sendable {
     public var entries: [DictionaryEntry]
     public var skipped: Int
@@ -11,7 +10,6 @@ public struct ImportBatch: Equatable, Sendable {
     }
 }
 
-/// Parses Wispr Flow's dictionary CSV (R9, KTD8): one column for a word, two for misspelling and correction.
 public enum WisprCSVParser {
     public static func parse(data: Data) -> ImportBatch {
         parse(String(decoding: data, as: UTF8.self))
@@ -37,7 +35,6 @@ public enum WisprCSVParser {
         return batch
     }
 
-    /// The comma-separated fields of one row, or nil when a quoted field is never closed.
     /// A field is quoted only when its quote comes right after the comma, as in Wispr's own importer.
     private static func fields(_ line: Substring) -> [String]? {
         var fields: [String] = []

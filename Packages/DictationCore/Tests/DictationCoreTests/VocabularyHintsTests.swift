@@ -3,7 +3,6 @@ import XCTest
 
 final class VocabularyHintsTests: XCTestCase {
     private func words(_ texts: [String]) -> [DictionaryEntry] {
-        // Already in priority order, like DictionaryStore.entries().
         texts.map { .word($0) }
     }
 
@@ -40,7 +39,7 @@ final class VocabularyHintsTests: XCTestCase {
     }
 
     func testDeepgramNova3StaysUnderTheTokenBudgetAndOtherModelsGetNothing() {
-        let terms = (0..<300).map { String(format: "keyterm%03d", $0) } // 10 characters ≈ 4 tokens each
+        let terms = (0..<300).map { String(format: "keyterm%03d", $0) }
         let nova3 = VocabularyHints.select(words(terms), provider: .deepgram, model: "nova-3")
         XCTAssertEqual(nova3.terms.count, 100)
         XCTAssertLessThanOrEqual(nova3.terms.reduce(0) { $0 + ($1.count + 2) / 3 }, 400)

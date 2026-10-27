@@ -34,8 +34,7 @@ public struct CleanupClient: Sendable {
         let tag = "transcript-\(UUID().uuidString.prefix(8).lowercased())"
         var messages = [["role": "system", "content": config.prompt]]
         if !config.glossary.isEmpty {
-            // A separate message, so the user's editable prompt stays untouched.
-            messages.append(["role": "system", "content": "Preferred spellings. When the transcript contains one of these terms, write it exactly as shown: \(config.glossary.joined(separator: ", "))"])
+            messages.append(["role": "system", "content": "Preferred spellings. When the transcript contains one of these terms, write it exactly as shown: \(VocabularyHints.glossaryText(config.glossary))"])
         }
         messages.append(["role": "user", "content": "<\(tag)>\n\(transcript)\n</\(tag)>"])
         let body: [String: Any] = ["model": config.model, "messages": messages]

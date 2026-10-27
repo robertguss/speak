@@ -1,12 +1,10 @@
 import Foundation
 
-/// Which dictionary terms a transcription request carries, by provider and model (R4, R5, KTD3, KTD4).
 public struct VocabularyHints: Equatable, Sendable {
     /// Terms to send, highest priority first.
     public let terms: [String]
     /// How many distinct terms the dictionary has to offer.
     public let candidateCount: Int
-    /// Whether the selected model takes hints at all.
     public let supported: Bool
 
     static let whisperPromptLimit = 600
@@ -32,22 +30,23 @@ public struct VocabularyHints: Equatable, Sendable {
         return VocabularyHints(terms: terms ?? [], candidateCount: candidates.count, supported: terms != nil)
     }
 
-    /// `gpt-transcribe` takes `keywords[]`; other OpenAI-compatible models only take a prompt.
     static func usesKeywords(_ model: String) -> Bool {
         model.hasPrefix("gpt-transcribe")
     }
 
-    /// The spelling list Whisper-style models receive as their prompt.
     static func whisperPrompt(_ terms: [String]) -> String {
         "Vocabulary: \(terms.joined(separator: ", "))."
     }
 
     /// Preferred spellings for the cleanup prompt (KTD6), capped in priority order.
     public static func glossary(_ entries: [DictionaryEntry]) -> [String] {
-        fitting(candidates(entries)) { $0.joined(separator: ", ").count <= glossaryLimit }
+        fitting(candidates(entries)) { glossaryText($0).count <= glossaryLimit }
     }
 
-    /// Every word's text and every replacement's output; what is heard is a mishearing and never sent.
+    static func glossaryText(_ terms: [String]) -> String {
+        terms.joined(separator: ", ")
+    }
+
     static func candidates(_ entries: [DictionaryEntry]) -> [String] {
         var seen = Set<String>()
         return entries
@@ -55,7 +54,6 @@ public struct VocabularyHints: Equatable, Sendable {
             .filter { !$0.isEmpty && seen.insert($0.lowercased()).inserted }
     }
 
-    /// The longest priority-order prefix that still satisfies `fits`.
     private static func fitting(_ terms: [String], _ fits: ([String]) -> Bool) -> [String] {
         var kept: [String] = []
         for term in terms {

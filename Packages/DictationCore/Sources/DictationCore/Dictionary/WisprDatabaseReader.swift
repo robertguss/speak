@@ -15,8 +15,6 @@ public enum WisprImportError: Error, Equatable {
     }
 }
 
-/// Reads the personal dictionary from Wispr Flow's local database (R8, R11, KTD7).
-/// Wispr's files are only ever opened read-only; queries run against a private snapshot.
 public enum WisprDatabaseReader {
     #if os(macOS)
     public static var defaultURL: URL {
@@ -45,7 +43,6 @@ public enum WisprDatabaseReader {
         return try entries(in: snapshot)
     }
 
-    /// Copies a consistent snapshot with SQLite's backup API from a read-only connection.
     private static func backup(_ source: URL, to destination: URL, immutable: Bool) throws {
         let uri = source.absoluteString + (immutable ? "?mode=ro&immutable=1" : "?mode=ro")
         let from = try open(uri, flags: SQLITE_OPEN_READONLY | SQLITE_OPEN_URI)
@@ -73,6 +70,9 @@ public enum WisprDatabaseReader {
         WHERE isDeleted = 0 AND isSnippet = 0 AND teamDictionaryId = '\(personalTeamID)'
         """
         let now = Date()
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS xxx"
         return try rows(db, sql).compactMap { row in
             let phrase = (row[0] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let replacement = (row[1] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -83,17 +83,9 @@ public enum WisprDatabaseReader {
                 heardAs: phrase,
                 starred: row[2] == "1",
                 useCount: Int(row[3] ?? "") ?? 0,
-                addedAt: row[4].flatMap(parseDate) ?? now
+                addedAt: row[4].flatMap(formatter.date(from:)) ?? now
             )
         }
-    }
-
-    /// Wispr stores dates as text like `2026-01-01 21:00:22.116 +00:00`.
-    private static func parseDate(_ text: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS xxx"
-        return formatter.date(from: text)
     }
 
     private static func open(_ path: String, flags: Int32) throws -> OpaquePointer {
@@ -105,7 +97,6 @@ public enum WisprDatabaseReader {
         return db
     }
 
-    /// Every row as text columns.
     private static func rows(_ db: OpaquePointer, _ sql: String) throws -> [[String?]] {
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { throw unreadable(db) }

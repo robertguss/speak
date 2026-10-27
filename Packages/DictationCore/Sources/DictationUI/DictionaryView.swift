@@ -2,21 +2,20 @@ import SwiftUI
 import UniformTypeIdentifiers
 import DictationCore
 
-/// Holds the screen's copy of the synced dictionary. Every change is written straight to the store.
 @MainActor
 @Observable
-public final class DictionaryModel {
-    public private(set) var entries: [DictionaryEntry] = []
-    public private(set) var error: String?
-    public private(set) var importing = false
+final class DictionaryModel {
+    private(set) var entries: [DictionaryEntry] = []
+    private(set) var error: String?
+    private(set) var importing = false
     var importResult: ImportAlert?
     private let store: DictionaryStore
 
-    public init(store: DictionaryStore = .keychain()) {
+    init(store: DictionaryStore) {
         self.store = store
     }
 
-    public func reload() {
+    func reload() {
         do {
             entries = try store.entries()
             error = nil
@@ -25,12 +24,11 @@ public final class DictionaryModel {
         }
     }
 
-    public func hints(_ prefs: AppPreferences) -> VocabularyHints {
+    func hints(_ prefs: AppPreferences) -> VocabularyHints {
         let provider = prefs.transcriptionProvider
         return VocabularyHints.select(entries, provider: provider, model: prefs.model(for: provider))
     }
 
-    /// Adds or replaces an entry. Returns an inline message when it collides with another entry.
     func save(_ entry: DictionaryEntry, isNew: Bool) -> String? {
         do {
             try isNew ? store.add(entry) : store.update(entry)
@@ -72,7 +70,6 @@ public final class DictionaryModel {
     }
     #endif
 
-    /// Reads and merges off the main actor; a large Wispr database or list takes a moment.
     private func runImport(_ read: @escaping @Sendable () throws -> ImportBatch) {
         importing = true
         let store = store
@@ -106,7 +103,6 @@ struct ImportAlert: Identifiable {
     var id: String { title + message }
 }
 
-/// The Settings section that summarizes the dictionary and opens it.
 struct DictionarySection: View {
     let model: DictionaryModel
     let prefs: AppPreferences
@@ -152,7 +148,6 @@ struct DictionarySection: View {
     }
 }
 
-/// Lists, searches, edits, stars, and imports dictionary entries.
 struct DictionaryView: View {
     let model: DictionaryModel
     let prefs: AppPreferences
@@ -248,7 +243,6 @@ private struct EntryRow: View {
     }
 }
 
-/// One add/edit form for both entry kinds.
 struct EntryEditor: View {
     enum Target: Identifiable {
         case new
@@ -318,10 +312,10 @@ struct EntryEditor: View {
     private func save() {
         var entry = DictionaryEntry(kind: kind, text: trimmedWriteAs, heardAs: trimmedHeardAs)
         if case .existing(let existing) = target {
-            entry.id = existing.id
-            entry.starred = existing.starred
-            entry.useCount = existing.useCount
-            entry.addedAt = existing.addedAt
+            entry = existing
+            entry.kind = kind
+            entry.text = trimmedWriteAs
+            entry.heardAs = kind == .replacement ? trimmedHeardAs : nil
         }
         duplicate = model.save(entry, isNew: isNew)
         if duplicate == nil { dismiss() }

@@ -1,15 +1,12 @@
 import Foundation
 import Security
 
-/// A collection of separately stored items keyed by ID. The keychain backs it in the apps;
-/// tests use an in-memory fake.
 public protocol ItemStore: Sendable {
     func readAll() throws -> [String: Data]
     func write(_ data: Data, id: String) throws
     func delete(id: String) throws
 }
 
-/// One synchronizable keychain item per entry, account `dictionary:<id>` (KTD1).
 /// iCloud Keychain resolves conflicts per item, so entries added on different devices never overwrite each other.
 public struct KeychainItemStore: ItemStore {
     static let prefix = "dictionary:"
@@ -20,7 +17,7 @@ public struct KeychainItemStore: ItemStore {
     }
 
     public func readAll() throws -> [String: Data] {
-        var query = KeychainBlobStore.query(accessGroup: accessGroup)
+        var query = KeychainBlobStore.sharedAttributes(accessGroup: accessGroup)
         query[kSecReturnAttributes as String] = true
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitAll
@@ -59,8 +56,6 @@ public struct MergeSummary: Equatable, Sendable {
     public var alreadyPresent: Int
 }
 
-/// Reads and edits the synced custom dictionary (R2, R3, R10).
-/// Every edit touches only its own entries' items and keeps JSON fields this build doesn't know.
 public struct DictionaryStore: Sendable {
     let items: any ItemStore
 
@@ -74,21 +69,19 @@ public struct DictionaryStore: Sendable {
 
     /// Every readable entry, highest hint priority first. Throws when the keychain can't be read.
     public func entries() throws -> [DictionaryEntry] {
-        try items.readAll().values
-            .compactMap { try? JSONDecoder().decode(DictionaryEntry.self, from: $0) }
-            .sorted(by: DictionaryEntry.priority)
+        try Self.decode(items.readAll().values).sorted(by: DictionaryEntry.priority)
     }
 
     /// Adds a new entry; throws `.duplicate` when an entry already does the same job.
     public func add(_ entry: DictionaryEntry) throws {
-        guard try !entries().contains(where: { $0.matchKey == entry.matchKey }) else { throw DictionaryStoreError.duplicate }
+        guard try !Self.decode(items.readAll().values).contains(where: { $0.matchKey == entry.matchKey }) else { throw DictionaryStoreError.duplicate }
         try write(entry, existing: nil)
     }
 
     /// Replaces the stored entry with the same ID; throws `.duplicate` when the edit collides with another entry.
     public func update(_ entry: DictionaryEntry) throws {
         let stored = try items.readAll()
-        let others = stored.filter { $0.key != entry.id }.values.compactMap { try? JSONDecoder().decode(DictionaryEntry.self, from: $0) }
+        let others = Self.decode(stored.filter { $0.key != entry.id }.values)
         guard !others.contains(where: { $0.matchKey == entry.matchKey }) else { throw DictionaryStoreError.duplicate }
         try write(entry, existing: stored[entry.id])
     }
@@ -99,7 +92,7 @@ public struct DictionaryStore: Sendable {
 
     /// Adds every entry that doesn't match an existing one or an earlier one in the batch.
     public func merge(_ batch: [DictionaryEntry]) throws -> MergeSummary {
-        var keys = Set(try entries().map(\.matchKey))
+        var keys = Set(try Self.decode(items.readAll().values).map(\.matchKey))
         var summary = MergeSummary(added: 0, alreadyPresent: 0)
         for entry in batch {
             guard keys.insert(entry.matchKey).inserted else {
@@ -110,6 +103,12 @@ public struct DictionaryStore: Sendable {
             summary.added += 1
         }
         return summary
+    }
+
+    /// Unreadable items are skipped.
+    private static func decode(_ items: some Sequence<Data>) -> [DictionaryEntry] {
+        let decoder = JSONDecoder()
+        return items.compactMap { try? decoder.decode(DictionaryEntry.self, from: $0) }
     }
 
     private func write(_ entry: DictionaryEntry, existing: Data?) throws {

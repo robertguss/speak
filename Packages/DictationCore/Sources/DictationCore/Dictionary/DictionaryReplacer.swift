@@ -1,6 +1,5 @@
 import Foundation
 
-/// Applies "heard as → write as" replacements to finished text (R7, KTD5).
 public enum DictionaryReplacer {
     /// Whole-word, case-insensitive, longest phrase first, in one pass so replaced text is never matched again.
     public static func apply(to text: String, entries: [DictionaryEntry]) -> String {
@@ -15,8 +14,8 @@ public enum DictionaryReplacer {
         let alternatives = replacements
             .map { "(" + $0.words.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "\\s+") + ")" }
             .joined(separator: "|")
-        // A match may not touch a letter or digit on either side.
-        let pattern = "(?<![\\p{L}\\p{N}])(?:\(alternatives))(?![\\p{L}\\p{N}])"
+        let wordCharacter = "[\\p{L}\\p{N}]"
+        let pattern = "(?<!\(wordCharacter))(?:\(alternatives))(?!\(wordCharacter))"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return text }
 
         let source = text as NSString

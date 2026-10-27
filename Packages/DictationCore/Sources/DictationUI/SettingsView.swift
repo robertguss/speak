@@ -13,7 +13,7 @@ public final class SettingsModel {
     public private(set) var transcriptionKey = ""
     public private(set) var cleanupKey = ""
     public private(set) var saveError: String?
-    public let dictionary: DictionaryModel
+    let dictionary: DictionaryModel
     private let store: SettingsStore
 
     public init(store: SettingsStore = .keychain()) {
