@@ -33,6 +33,8 @@
 	<string>1</string>
 	<key>DictationKeychainAccessGroup</key>
 	<string>$(AppIdentifierPrefix)com.robertguss.speak.shared</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Speak records your voice when you tap the mic in the Speak keyboard, then sends the clip to your chosen transcription provider.</string>
 	<key>UIBackgroundModes</key>
