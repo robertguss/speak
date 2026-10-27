@@ -18,17 +18,26 @@ final class DictionaryStoreTests: XCTestCase {
         XCTAssertEqual(Set(try DictionaryStore(items: synced).entries().map(\.text)), ["Kubernetes", "Populi", "kubectl"])
     }
 
-    func testSameWordAddedOnTwoDevicesCanStillBeStarred() throws {
+    func testTheSamePhraseOnTwoDevicesSharesOneItemSoTheNewestWins() throws {
         let mac = InMemoryItemStore()
         let phone = InMemoryItemStore()
-        try DictionaryStore(items: mac).add(.word("Kubernetes"))
-        try DictionaryStore(items: phone).add(.word("Kubernetes"))
-        let store = DictionaryStore(items: InMemoryItemStore(items: mac.snapshot.merging(phone.snapshot) { a, _ in a }))
+        try DictionaryStore(items: mac).add(.replacement("pee are", with: "PR"))
+        try DictionaryStore(items: phone).add(.replacement("Pee Are", with: "P.R."))
+        XCTAssertEqual(Set(mac.snapshot.keys), Set(phone.snapshot.keys))
 
-        var entry = try XCTUnwrap(store.entries().first)
-        entry.starred = true
+        let synced = InMemoryItemStore(items: mac.snapshot.merging(phone.snapshot) { _, newest in newest })
+        XCTAssertEqual(try DictionaryStore(items: synced).entries().map(\.text), ["P.R."])
+    }
+
+    func testEditingWhatAnEntryMatchesMovesItSoTheOldPhraseCanBeAddedAgain() throws {
+        let store = DictionaryStore(items: InMemoryItemStore())
+        var entry = DictionaryEntry.replacement("pee are", with: "PR")
+        try store.add(entry)
+        entry.heardAs = "pull request"
         try store.update(entry)
-        XCTAssertEqual(try store.entries().filter(\.starred).map(\.id), [entry.id])
+        try store.add(.replacement("pee are", with: "PR"))
+
+        XCTAssertEqual(Set(try store.entries().compactMap(\.heardAs)), ["pull request", "pee are"])
     }
 
     func testDeleteRemovesOnlyThatEntryAndEditsKeepUnknownFields() throws {

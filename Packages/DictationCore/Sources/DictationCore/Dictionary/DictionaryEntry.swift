@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
@@ -15,7 +16,7 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
     public var addedAt: Date
 
     public init(
-        id: String = UUID().uuidString,
+        id: String? = nil,
         kind: Kind,
         text: String,
         heardAs: String? = nil,
@@ -23,13 +24,14 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
         useCount: Int = 0,
         addedAt: Date = Date()
     ) {
-        self.id = id
+        self.id = ""
         self.kind = kind
         self.text = text
         self.heardAs = kind == .replacement ? heardAs : nil
         self.starred = starred
         self.useCount = useCount
         self.addedAt = addedAt
+        self.id = id ?? Self.itemID(for: matchKey)
     }
 
     public static func word(_ text: String) -> DictionaryEntry {
@@ -57,6 +59,12 @@ public struct DictionaryEntry: Codable, Equatable, Identifiable, Sendable {
         case .word: "word:" + text.lowercased()
         case .replacement: "replacement:" + (heardAs ?? "").lowercased()
         }
+    }
+
+    /// Entries that match share one keychain item, so the same phrase written on two devices
+    /// resolves to the newest write when iCloud Keychain syncs.
+    static func itemID(for matchKey: String) -> String {
+        SHA256.hash(data: Data(matchKey.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
     static func priority(_ a: DictionaryEntry, _ b: DictionaryEntry) -> Bool {
